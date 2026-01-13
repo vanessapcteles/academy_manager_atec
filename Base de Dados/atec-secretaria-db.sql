@@ -7,7 +7,22 @@ CREATE DATABASE atec_secretaria;
 USE atec_secretaria;
 
 -- =========================================================
--- 1) UTILIZADORES (base de autenticação)
+-- TABELA ROLES
+-- =========================================================
+CREATE TABLE roles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome ENUM('ADMIN', 'SECRETARIA', 'FORMADOR', 'FORMANDO') UNIQUE NOT NULL
+);
+
+INSERT INTO roles (nome) VALUES
+('ADMIN'),
+('SECRETARIA'),
+('FORMADOR'),
+('FORMANDO');
+
+
+-- =========================================================
+-- UTILIZADORES (base de autenticação)
 -- =========================================================
 CREATE TABLE utilizadores (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -22,18 +37,45 @@ CREATE TABLE utilizadores (
     activation_token VARCHAR(255),
     reset_password_token VARCHAR(255),
 
-    tipo_utilizador ENUM('secretaria', 'formador', 'formando','utilizador') NOT NULL DEFAULT ('utilizador'),
+    role_id INT NOT NULL,
 
     data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     two_fa_enabled BOOLEAN DEFAULT FALSE,
-    two_fa_secret VARCHAR(255)
+    two_fa_secret VARCHAR(255),
+
+    FOREIGN KEY (role_id) REFERENCES roles(id)
 );
 
 -- =========================================================
--- 2) PERFIS: FORMANDOS / FORMADORES / SECRETARIA
---    (1:1 com utilizadores)
+-- CRIAR ADMIN
 -- =========================================================
+INSERT INTO utilizadores (
+    nome_completo,
+    email,
+    password_hash,
+    is_active,
+    role_id
+)
+VALUES (
+    'Administrador Geral',
+    'admin@atec.pt',
+    'HASH_AQUI',
+    TRUE,
+    (SELECT id FROM roles WHERE nome = 'ADMIN')
+);
+
+-- =========================================================
+-- PERFIS: FORMANDOS / FORMADORES / SECRETARIA
+-- (1:1 com utilizadores)
+-- =========================================================
+CREATE TABLE formadores (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    utilizador_id INT NOT NULL UNIQUE,
+    biografia TEXT,
+    FOREIGN KEY (utilizador_id) REFERENCES utilizadores(id) ON DELETE CASCADE
+);
+
 CREATE TABLE formandos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     utilizador_id INT NOT NULL UNIQUE,
@@ -43,25 +85,17 @@ CREATE TABLE formandos (
     FOREIGN KEY (utilizador_id) REFERENCES utilizadores(id) ON DELETE CASCADE
 );
 
-CREATE TABLE formadores (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    utilizador_id INT NOT NULL UNIQUE,
-    biografia TEXT,
-    FOREIGN KEY (utilizador_id) REFERENCES utilizadores(id) ON DELETE CASCADE
-);
-
 CREATE TABLE secretaria (
     id INT AUTO_INCREMENT PRIMARY KEY,
     utilizador_id INT NOT NULL UNIQUE,
-    is_admin BOOLEAN DEFAULT FALSE,
     cargo VARCHAR(100),
     observacoes TEXT,
     FOREIGN KEY (utilizador_id) REFERENCES utilizadores(id) ON DELETE CASCADE
 );
 
 -- =========================================================
--- 3) FICHEIROS / FOTOS EM BINÁRIO (sem caminhos)
---    (serve para anexos e foto de perfil de qualquer utilizador)
+-- FICHEIROS / FOTOS EM BINÁRIO (sem caminhos)
+-- (serve para anexos e foto de perfil de qualquer utilizador)
 -- =========================================================
 CREATE TABLE ficheiros_anexos (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -77,7 +111,7 @@ CREATE TABLE ficheiros_anexos (
 );
 
 -- =========================================================
--- 4) SALAS / MÓDULOS
+-- SALAS / MÓDULOS
 -- =========================================================
 CREATE TABLE salas (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -93,7 +127,7 @@ CREATE TABLE modulos (
 );
 
 -- =========================================================
--- 5) CURSOS (SEM datas) + TURMAS (COM datas)
+-- CURSOS (SEM datas) + TURMAS (COM datas)
 -- =========================================================
 CREATE TABLE cursos (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -116,8 +150,8 @@ CREATE TABLE turmas (
 );
 
 -- =========================================================
--- 6) "CURSO DETALHES" -> por TURMA
---    Naquela turma: módulo X com formador X (e sala X)
+-- CURSO DETALHES -> por TURMA
+-- Naquela turma: módulo X com formador X (e sala X)
 -- =========================================================
 CREATE TABLE turma_detalhes (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -138,7 +172,7 @@ CREATE TABLE turma_detalhes (
 );
 
 -- =========================================================
--- 7) INSCRIÇÕES -> agora ligam a TURMAS (não a cursos)
+-- INSCRIÇÕES ligam a TURMAS (não a cursos)
 -- =========================================================
 CREATE TABLE inscricoes (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -156,7 +190,7 @@ CREATE TABLE inscricoes (
 );
 
 -- =========================================================
--- 8) AVALIAÇÕES (notas por módulo por inscrição)
+-- AVALIAÇÕES (notas por módulo por inscrição)
 -- =========================================================
 CREATE TABLE avaliacoes (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -175,8 +209,8 @@ CREATE TABLE avaliacoes (
 );
 
 -- =========================================================
--- 9) HORÁRIOS (para todos os users)
---    9.1) AULAS (ligadas à turma e ao módulo/formador/sala)
+-- HORÁRIOS (para todos os users)
+-- AULAS (ligadas à turma e ao módulo/formador/sala)
 -- =========================================================
 CREATE TABLE horarios_aulas (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -189,7 +223,7 @@ CREATE TABLE horarios_aulas (
     FOREIGN KEY (id_turma_detalhe) REFERENCES turma_detalhes(id) ON DELETE CASCADE
 );                           
 
--- 9.2) EVENTOS GENÉRICOS (qualquer utilizador: reuniões, férias, etc.)
+-- EVENTOS GENÉRICOS (qualquer utilizador: reuniões, férias, etc.)
 CREATE TABLE horarios_eventos (
     id INT AUTO_INCREMENT PRIMARY KEY,
 
@@ -204,7 +238,7 @@ CREATE TABLE horarios_eventos (
 );
 
 -- =========================================================
--- 10) DISPONIBILIDADE DOS FORMADORES
+-- DISPONIBILIDADE DOS FORMADORES
 -- =========================================================
 CREATE TABLE disponibilidade_formadores (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -219,7 +253,7 @@ CREATE TABLE disponibilidade_formadores (
 );
 
 -- =========================================================
--- 11) TRIGGERS: impedir sobreposição de aulas (sala e formador)
+-- TRIGGERS: impedir sobreposição de aulas (sala e formador)
 -- =========================================================
 DELIMITER $$
 
