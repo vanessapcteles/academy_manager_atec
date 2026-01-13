@@ -1,5 +1,5 @@
 -- =========================================================
--- BD: atec_secretaria (NOVO COMPLETO, alinhado com o teu)
+-- BD: atec_secretaria 
 -- =========================================================
 
 DROP DATABASE IF EXISTS atec_secretaria;
@@ -22,7 +22,7 @@ CREATE TABLE utilizadores (
     activation_token VARCHAR(255),
     reset_password_token VARCHAR(255),
 
-    tipo_utilizador ENUM('admin', 'secretaria', 'formador', 'formando','utilizador') NOT NULL DEFAULT ('utilizador'),
+    tipo_utilizador ENUM('secretaria', 'formador', 'formando','utilizador') NOT NULL DEFAULT ('utilizador'),
 
     data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -53,6 +53,7 @@ CREATE TABLE formadores (
 CREATE TABLE secretaria (
     id INT AUTO_INCREMENT PRIMARY KEY,
     utilizador_id INT NOT NULL UNIQUE,
+    is_admin BOOLEAN DEFAULT FALSE,
     cargo VARCHAR(100),
     observacoes TEXT,
     FOREIGN KEY (utilizador_id) REFERENCES utilizadores(id) ON DELETE CASCADE
@@ -68,8 +69,8 @@ CREATE TABLE ficheiros_anexos (
 
     categoria ENUM('foto', 'documento', 'outro') DEFAULT 'documento',
     nome_original VARCHAR(255),
-    mime_type VARCHAR(100) NOT NULL,
-    dados LONGBLOB NOT NULL,
+    tipo_ficheiro VARCHAR(100) NOT NULL,
+    dados LONGBLOB NOT NULL, -- codigo binário 
     data_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY (utilizador_id) REFERENCES utilizadores(id) ON DELETE CASCADE
@@ -121,7 +122,6 @@ CREATE TABLE turmas (
 CREATE TABLE turma_detalhes (
     id INT AUTO_INCREMENT PRIMARY KEY,
 
-    id_turma INT NOT NULL,
     id_modulo INT NOT NULL,
     id_formador INT NOT NULL,
     id_sala INT NOT NULL,
@@ -129,10 +129,9 @@ CREATE TABLE turma_detalhes (
     sequencia INT NOT NULL,          -- ordem do módulo dentro da turma
     horas_planeadas INT NOT NULL,    -- ajuda a controlar máximo de horas do módulo
 
-    UNIQUE (id_turma, id_modulo),
-    UNIQUE (id_turma, sequencia),
+    UNIQUE (id_modulo),
+    UNIQUE (sequencia),
 
-    FOREIGN KEY (id_turma) REFERENCES turmas(id) ON DELETE CASCADE,
     FOREIGN KEY (id_modulo) REFERENCES modulos(id) ON DELETE RESTRICT,
     FOREIGN KEY (id_formador) REFERENCES formadores(id) ON DELETE RESTRICT,
     FOREIGN KEY (id_sala) REFERENCES salas(id) ON DELETE RESTRICT
@@ -182,20 +181,13 @@ CREATE TABLE avaliacoes (
 CREATE TABLE horarios_aulas (
     id INT AUTO_INCREMENT PRIMARY KEY,
 
-    id_turma INT NOT NULL,
     id_turma_detalhe INT NOT NULL,
-
-    id_sala INT NOT NULL,
-    id_formador INT NOT NULL,
 
     inicio DATETIME NOT NULL,
     fim DATETIME NOT NULL,
 
-    FOREIGN KEY (id_turma) REFERENCES turmas(id) ON DELETE CASCADE,
-    FOREIGN KEY (id_turma_detalhe) REFERENCES turma_detalhes(id) ON DELETE CASCADE,
-    FOREIGN KEY (id_sala) REFERENCES salas(id) ON DELETE RESTRICT,
-    FOREIGN KEY (id_formador) REFERENCES formadores(id) ON DELETE RESTRICT
-);
+    FOREIGN KEY (id_turma_detalhe) REFERENCES turma_detalhes(id) ON DELETE CASCADE
+);                           
 
 -- 9.2) EVENTOS GENÉRICOS (qualquer utilizador: reuniões, férias, etc.)
 CREATE TABLE horarios_eventos (
@@ -221,7 +213,7 @@ CREATE TABLE disponibilidade_formadores (
     inicio DATETIME NOT NULL,
     fim DATETIME NOT NULL,
 
-    tipo ENUM('disponivel', 'indisponivel') DEFAULT 'disponivel',
+    tipo ENUM('online', 'presencial') DEFAULT 'presencial',
 
     FOREIGN KEY (id_formador) REFERENCES formadores(id) ON DELETE CASCADE
 );
@@ -231,45 +223,25 @@ CREATE TABLE disponibilidade_formadores (
 -- =========================================================
 DELIMITER $$
 
-CREATE TRIGGER trg_no_overlap_aulas_insert
-BEFORE INSERT ON horarios_aulas
-FOR EACH ROW
-BEGIN
-    -- Sala não pode ter overlap
-    IF EXISTS (
-        SELECT 1
-        FROM horarios_aulas h
-        WHERE h.id_sala = NEW.id_sala
-          AND NEW.inicio < h.fim
-          AND NEW.fim > h.inicio
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Conflito: sala já ocupada nesse intervalo.';
-    END IF;
-
-    -- Formador não pode ter overlap
-    IF EXISTS (
-        SELECT 1
-        FROM horarios_aulas h
-        WHERE h.id_formador = NEW.id_formador
-          AND NEW.inicio < h.fim
-          AND NEW.fim > h.inicio
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Conflito: formador já alocado nesse intervalo.';
-    END IF;
-END$$
-
 CREATE TRIGGER trg_no_overlap_aulas_update
 BEFORE UPDATE ON horarios_aulas
 FOR EACH ROW
 BEGIN
-    -- Sala não pode ter overlap (ignorando o próprio registo)
+    DECLARE v_id_sala INT;
+    DECLARE v_id_formador INT;
+
+    SELECT id_sala, id_formador
+    INTO v_id_sala, v_id_formador
+    FROM turma_detalhes
+    WHERE id = NEW.id_turma_detalhe;
+
+    -- SALA
     IF EXISTS (
         SELECT 1
         FROM horarios_aulas h
+        JOIN turma_detalhes td ON td.id = h.id_turma_detalhe
         WHERE h.id <> NEW.id
-          AND h.id_sala = NEW.id_sala
+          AND td.id_sala = v_id_sala
           AND NEW.inicio < h.fim
           AND NEW.fim > h.inicio
     ) THEN
@@ -277,12 +249,13 @@ BEGIN
         SET MESSAGE_TEXT = 'Conflito: sala já ocupada nesse intervalo.';
     END IF;
 
-    -- Formador não pode ter overlap (ignorando o próprio registo)
+    -- FORMADOR
     IF EXISTS (
         SELECT 1
         FROM horarios_aulas h
+        JOIN turma_detalhes td ON td.id = h.id_turma_detalhe
         WHERE h.id <> NEW.id
-          AND h.id_formador = NEW.id_formador
+          AND td.id_formador = v_id_formador
           AND NEW.inicio < h.fim
           AND NEW.fim > h.inicio
     ) THEN
