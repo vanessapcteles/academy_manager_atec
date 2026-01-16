@@ -66,12 +66,7 @@ VALUES (
     (SELECT id FROM roles WHERE nome = 'ADMIN')
 );
 
--- Inserir o Admin na tabela de Secretaria também
-INSERT INTO secretaria (utilizador_id, cargo)
-VALUES (
-    (SELECT id FROM utilizadores WHERE email = 'admin@atec.pt'),
-    'Diretor'
-);
+
 
 -- =========================================================
 -- PERFIS: FORMANDOS / FORMADORES / SECRETARIA
@@ -99,6 +94,13 @@ CREATE TABLE secretaria (
     cargo VARCHAR(100),
     observacoes TEXT,
     FOREIGN KEY (utilizador_id) REFERENCES utilizadores(id) ON DELETE CASCADE
+);
+
+-- Inserir o Admin na tabela de Secretaria também
+INSERT INTO secretaria (utilizador_id, cargo)
+VALUES (
+    (SELECT id FROM utilizadores WHERE email = 'admin@atec.pt'),
+    'Diretor'
 );
 
 -- =========================================================
