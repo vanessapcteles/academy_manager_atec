@@ -61,14 +61,14 @@ function LoginPage() {
         setMessage({ text: '', type: '' })
 
         try {
-            // Se já estivermos no passo 2FA, validamos o token
+            // No passo 2FA, validamos o token
             if (show2FA) {
                 const response = await authService.validate2FA(email, twoFACode)
                 finishLogin(response)
                 return
             }
 
-            // Passo 1: Login normal
+            // Login normal
             const response = await authService.login(email, password)
 
             if (response.requires2FA) {
@@ -102,7 +102,7 @@ function LoginPage() {
     }
 
     const handleGoogleLogin = () => {
-        // Redirecionar para o backend que inicia o OAuth
+        // Redireciona para o backend que inicia o OAuth
         window.location.href = `${authService.API_URL}/api/auth/google`;
     }
 

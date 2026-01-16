@@ -7,13 +7,11 @@ import redis from '../config/redis.js';
 import { sendActivationEmail, sendPasswordResetEmail } from '../config/mailer.js';
 import { generateToken } from '../utils/token.js';
 
-
-
 export const register = async (req, res) => {
   try {
     const { nome_completo, email, password, tipo_utilizador } = req.body;
 
-    // ... (mesma lógica de validações)
+    // Validar dados
     if (!nome_completo || !email || !password || !tipo_utilizador) {
       return res.status(400).json({ message: 'Dados em falta' });
     }
@@ -34,7 +32,7 @@ export const register = async (req, res) => {
       [nome_completo, email, password_hash, role_id, activation_token]
     );
 
-    // Enviar email de ativação (não bloqueia a resposta se falhar o envio para não dar erro ao user no teste)
+    // Enviar email de ativação
     try {
       await sendActivationEmail(email, activation_token);
     } catch (mailError) {
@@ -113,9 +111,7 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-
-// ... login (não precisa de cache limpar)
-
+// Login
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -171,9 +167,7 @@ export const login = async (req, res) => {
   }
 };
 
-// --- NOVAS FUNÇÕES 2FA ---
-
-// 1. Gerar Segredo e QR Code
+// Gerar Segredo e QR Code (apenas funciona com o autenticador google ler o QR Code)
 export const setup2FA = async (req, res) => {
   try {
     const { userId } = req.body; // Num sistema real, viria do JWT (req.user.id)
@@ -182,7 +176,7 @@ export const setup2FA = async (req, res) => {
       name: `AcademyManager (ID: ${userId})`
     });
 
-    // Guardar segredo temporariamente (podes guardar na DB mas com flag 'enabled: false')
+    // Guardar segredo temporariamente 
     await db.query(
       'UPDATE utilizadores SET two_fa_secret = ? WHERE id = ?',
       [secret.base32, userId]
@@ -201,7 +195,7 @@ export const setup2FA = async (req, res) => {
   }
 };
 
-// 2. Verificar o primeiro código e ativar definitivamente
+// Verificar o primeiro código e ativar definitivamente
 export const verify2FA = async (req, res) => {
   try {
     const { userId, token } = req.body;
@@ -226,7 +220,7 @@ export const verify2FA = async (req, res) => {
   }
 };
 
-// 3. Validar 2FA durante o Login
+// Validar 2FA durante o Login
 export const validate2FA = async (req, res) => {
   try {
     const { email, token } = req.body;
@@ -271,7 +265,7 @@ export const validate2FA = async (req, res) => {
   }
 };
 
-// 4. Recuperar 2FA (Enviar email para desativar)
+// Recuperar 2FA (Enviar email para desativar)
 export const recover2FA = async (req, res) => {
   try {
     const { email } = req.body;
@@ -279,10 +273,10 @@ export const recover2FA = async (req, res) => {
 
     if (users.length > 0 && users[0].two_fa_enabled) {
       const token = uuidv4();
-      // Reutilizamos reset_password_token para evitar alterar schema DB agora
+      // Reutilizamos reset_password_token para evitar alterar schema DB 
       await db.query('UPDATE utilizadores SET reset_password_token = ? WHERE email = ?', [token, email]);
 
-      // É preciso importar a nova função lá em cima se não estiver
+      // Importar a nova função se não estiver
       const { send2FADisableEmail } = await import('../config/mailer.js');
       await send2FADisableEmail(email, token);
     }
@@ -294,7 +288,7 @@ export const recover2FA = async (req, res) => {
   }
 };
 
-// 5. Desativar 2FA via Token
+// Desativar 2FA via Token
 export const disable2FA = async (req, res) => {
   try {
     const { token } = req.body;
@@ -335,27 +329,27 @@ export const updateUser = async (req, res) => {
       [nome_completo || existing[0].nome_completo, email || existing[0].email, role_id, id]
     );
 
-    // Gestão de Perfis: Criar entrada na tabela respetiva se mudou de role
+    // Gestão de Perfis
     if (tipo_utilizador) {
       const role = tipo_utilizador.toUpperCase();
       try {
-        // 1. Limpar perfis antigos (Garanta que só existe numa tabela de perfil)
+        // Limpar perfis antigos (Garantir que só existe numa tabela de perfil)
         await db.query('DELETE FROM formandos WHERE utilizador_id = ?', [id]);
         await db.query('DELETE FROM formadores WHERE utilizador_id = ?', [id]);
         await db.query('DELETE FROM secretaria WHERE utilizador_id = ?', [id]);
 
-        // 2. Criar novo perfil
+        // Criar novo perfil
         if (role === 'FORMANDO') {
           await db.query('INSERT IGNORE INTO formandos (utilizador_id) VALUES (?)', [id]);
         } else if (role === 'FORMADOR') {
           await db.query('INSERT IGNORE INTO formadores (utilizador_id) VALUES (?)', [id]);
         } else if (role === 'SECRETARIA' || role === 'ADMIN') {
-          // Admin também pode ter ficha na secretaria
+          // Admin também tem ficha na secretaria
           await db.query('INSERT IGNORE INTO secretaria (utilizador_id, cargo) VALUES (?, ?)', [id, 'Técnico']);
         }
       } catch (profileError) {
         console.error('Erro ao gerir perfil:', profileError);
-        // Não falhar o request principal, apenas logar
+        // faz apenas o login, não falha o request
       }
     }
 
@@ -372,14 +366,14 @@ export const updateUser = async (req, res) => {
 export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-    // 1. Limpar perfis associados (para garantir que não falha por FK se o CASCADE não estiver ativo)
+    // Limpar perfis associados (para garantir que não falha por FK se o cascade não estiver ativo)
     await db.query('DELETE FROM formandos WHERE utilizador_id = ?', [id]);
     await db.query('DELETE FROM formadores WHERE utilizador_id = ?', [id]);
     await db.query('DELETE FROM secretaria WHERE utilizador_id = ?', [id]);
     await db.query('DELETE FROM ficheiros_anexos WHERE utilizador_id = ?', [id]);
     await db.query('DELETE FROM horarios_eventos WHERE utilizador_id = ?', [id]);
 
-    // 2. Eliminar o utilizador
+    // Eliminar o utilizador
     const [result] = await db.query('DELETE FROM utilizadores WHERE id = ?', [id]);
     if (result.affectedRows === 0) return res.status(404).json({ message: 'Utilizador não encontrado' });
 
@@ -392,17 +386,17 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-// Listar todos os utilizadores (COM CACHE)
+// Listar todos os utilizadores (com a cache)
 export const getUsers = async (req, res) => {
   try {
-    // 1. Tentar ler da Cache
+    // Tentar ler da Cache
     const cachedUsers = await redis.get('users:all');
     if (cachedUsers) {
       console.log('⚡ Dados vindos da Cache (Redis)');
       return res.status(200).json(JSON.parse(cachedUsers));
     }
 
-    // 2. Se não existir, ir à Base de Dados
+    // Se não existir, vai à Base de Dados
     console.log('🗄️ Dados vindos da Base de Dados (MySQL)');
     const [users] = await db.query(
       `SELECT u.id, u.nome_completo, u.email, u.is_active, r.nome as tipo_utilizador, u.data_criacao 
@@ -410,7 +404,7 @@ export const getUsers = async (req, res) => {
        JOIN roles r ON u.role_id = r.id`
     );
 
-    // 3. Guardar na Cache por 1 hora (3600 segundos)
+    // Guardar na Cache por 1 hora (3600 segundos)
     await redis.setEx('users:all', 3600, JSON.stringify(users));
 
     return res.status(200).json(users);
@@ -420,7 +414,7 @@ export const getUsers = async (req, res) => {
   }
 };
 
-// Obter um utilizador específico (Pode-se fazer cache por ID também)
+// Obter um utilizador específico (também pode-se fazer cache por ID)
 export const getUserById = async (req, res) => {
   try {
     const { id } = req.params;

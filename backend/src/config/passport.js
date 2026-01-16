@@ -43,10 +43,10 @@ passport.use(new GoogleStrategy({
                 return done(null, existingEmail[0]);
             }
 
-            // Criar novo Utilizador (Por defeito: FORMANDO)
+            // Criar novo Utilizador (Por defeito: formando)
             const activation_token = uuidv4();
 
-            // Obter ID da role CANDIDATO
+            // Obter id da role candidato
             const [roles] = await db.query("SELECT id FROM roles WHERE nome = 'CANDIDATO'");
             const role_id = roles[0].id;
 
@@ -58,7 +58,6 @@ passport.use(new GoogleStrategy({
             );
 
             // Obter o utilizador acabado de criar
-            // Obter o utilizador acabado de criar
             const [finalUsers] = await db.query(
                 `SELECT u.*, r.nome as tipo_utilizador 
                  FROM utilizadores u 
@@ -67,7 +66,7 @@ passport.use(new GoogleStrategy({
                 [email]
             );
 
-            // LIMPAR CACHE pois temos um novo utilizador
+            // Limpar cache
             await redis.del('users:all');
 
             return done(null, finalUsers[0]);

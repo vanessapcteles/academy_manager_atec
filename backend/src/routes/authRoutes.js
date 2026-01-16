@@ -44,14 +44,14 @@ router.get('/google/callback',
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
         const nameEncoded = encodeURIComponent(req.user.nome_completo || req.user.nome || '');
 
-        // 1. Se tem 2FA ativado
+        // Se tem 2FA ativado
         if (req.user.two_fa_enabled === 1 || req.user.two_fa_enabled === true) {
-            // Redireciona para o login a pedir o código, SEM enviar o token de sessão ainda
+            // Redireciona para o login a pedir o código, sem enviar o token de sessão ainda
             return res.redirect(`${frontendUrl}/login?requires2FA=true&email=${req.user.email}&name=${nameEncoded}`);
         }
 
-        // 2. Login normal (sem 2FA)
-        // Encode URI components to handle spaces/special chars in names
+        // Login normal (sem 2FA)
+        // Encode URI components para lidar com espaços/símbolos especiais no nome
 
         // Gerar token real
         const userObj = {
