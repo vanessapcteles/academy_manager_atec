@@ -24,7 +24,7 @@ export const sendActivationEmail = async (email, token) => {
     `
     };
 
-    console.log('🔗 Link de Ativação (DEV):', activationLink);
+    console.log('Link de Ativação (DEV):', activationLink);
     return transporter.sendMail(mailOptions);
 };
 
@@ -44,7 +44,7 @@ export const sendPasswordResetEmail = async (email, token) => {
       `
     };
 
-    console.log('🔗 Link de Reset (DEV):', resetLink);
+    console.log('Link de Reset (DEV):', resetLink);
     return transporter.sendMail(mailOptions);
 };
 
@@ -64,6 +64,6 @@ export const send2FADisableEmail = async (email, token) => {
       `
     };
 
-    console.log('🔗 Link de Desativação 2FA (DEV):', disableLink);
+    console.log('Link de Desativação 2FA (DEV):', disableLink);
     return transporter.sendMail(mailOptions);
 };

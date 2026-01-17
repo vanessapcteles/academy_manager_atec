@@ -1,7 +1,7 @@
 import express from 'express';
 import passport from 'passport';
 import {
-    register, login, updateUser, deleteUser, getUsers, getUserById,
+    register, login,
     setup2FA, verify2FA, validate2FA, recover2FA, disable2FA,
     activateAccount, forgotPassword, resetPassword
 } from '../controllers/authControllers.js';
@@ -17,12 +17,7 @@ router.post('/login', login);
 router.get('/activate', activateAccount); // GET para o link do email
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
-// USER MANAGEMENT 
-router.get('/user', authenticateToken, authorizeRole(['ADMIN', 'SECRETARIA']), getUsers);
 
-router.get('/user/:id', authenticateToken, authorizeRole(['ADMIN', 'SECRETARIA']), getUserById);
-router.put('/user/:id', authenticateToken, authorizeRole(['ADMIN']), updateUser);
-router.delete('/user/:id', authenticateToken, authorizeRole(['ADMIN']), deleteUser);
 
 // AUTH 2FA 
 router.post('/2fa/setup', setup2FA);       // Gera o QR Code

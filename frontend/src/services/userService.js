@@ -10,7 +10,7 @@ const getAuthHeader = () => {
 
 export const userService = {
     getAllUsers: async () => {
-        const response = await fetch(`${API_URL}/api/auth/user`, {
+        const response = await fetch(`${API_URL}/api/users`, {
             headers: getAuthHeader()
         });
         if (!response.ok) throw new Error('Erro ao carregar utilizadores');
@@ -18,17 +18,17 @@ export const userService = {
     },
 
     updateUser: async (id, data) => {
-        const response = await fetch(`${API_URL}/api/auth/user/${id}`, {
+        const response = await fetch(`${API_URL}/api/users/${id}`, {
             method: 'PUT',
             headers: getAuthHeader(),
-            body: JSON.stringify(data) 
+            body: JSON.stringify(data)
         });
         if (!response.ok) throw new Error('Erro ao atualizar utilizador');
         return response.json();
     },
 
     deleteUser: async (id) => {
-        const response = await fetch(`${API_URL}/api/auth/user/${id}`, {
+        const response = await fetch(`${API_URL}/api/users/${id}`, {
             method: 'DELETE',
             headers: getAuthHeader()
         });
