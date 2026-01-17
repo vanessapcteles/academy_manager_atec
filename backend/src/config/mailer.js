@@ -10,10 +10,11 @@ const transporter = nodemailer.createTransport({
 });
 
 export const sendActivationEmail = async (email, token) => {
-    const activationLink = `http://localhost:3001/api/auth/activate?token=${token}`;
+    const appUrl = process.env.APP_URL || 'http://localhost:3001';
+    const activationLink = `${appUrl}/api/auth/activate?token=${token}`;
 
     const mailOptions = {
-        from: '"Academy Manager" <noreply@atec.pt>',
+        from: `"Academy Manager" <${process.env.EMAIL_USER}>`,
         to: email,
         subject: 'Ativação de Conta - Academy Manager',
         html: `
@@ -29,10 +30,11 @@ export const sendActivationEmail = async (email, token) => {
 };
 
 export const sendPasswordResetEmail = async (email, token) => {
-    const resetLink = `http://localhost:5173/reset-password?token=${token}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
 
     const mailOptions = {
-        from: '"Academy Manager" <noreply@atec.pt>',
+        from: `"Academy Manager" <${process.env.EMAIL_USER}>`,
         to: email,
         subject: 'Recuperação de Password - Academy Manager',
         html: `
@@ -49,10 +51,11 @@ export const sendPasswordResetEmail = async (email, token) => {
 };
 
 export const send2FADisableEmail = async (email, token) => {
-    const disableLink = `http://localhost:5173/disable-2fa?token=${token}`;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const disableLink = `${frontendUrl}/disable-2fa?token=${token}`;
 
     const mailOptions = {
-        from: '"Academy Manager" <noreply@atec.pt>',
+        from: `"Academy Manager" <${process.env.EMAIL_USER}>`,
         to: email,
         subject: 'Desativar 2FA - Academy Manager',
         html: `
