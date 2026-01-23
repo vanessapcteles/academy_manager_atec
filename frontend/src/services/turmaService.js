@@ -52,5 +52,34 @@ export const turmaService = {
         });
         if (!response.ok) throw new Error('Erro ao eliminar turma');
         return response.json();
+    },
+
+    // Detalhes (Módulos da Turma)
+    getTurmaModules: async (turmaId) => {
+        const response = await fetch(`${API_URL}/api/turma-details/${turmaId}`, { headers: getAuthHeader() });
+        if (!response.ok) throw new Error('Erro ao carregar módulos da turma');
+        return response.json();
+    },
+
+    addModuleToTurma: async (turmaId, data) => {
+        const response = await fetch(`${API_URL}/api/turma-details/${turmaId}`, {
+            method: 'POST',
+            headers: getAuthHeader(),
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.message || 'Erro ao adicionar módulo');
+        }
+        return response.json();
+    },
+
+    removeModuleFromTurma: async (detalheId) => {
+        const response = await fetch(`${API_URL}/api/turma-details/${detalheId}`, {
+            method: 'DELETE',
+            headers: getAuthHeader()
+        });
+        if (!response.ok) throw new Error('Erro ao remover módulo');
+        return response.json();
     }
 };

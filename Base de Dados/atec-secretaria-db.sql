@@ -171,6 +171,7 @@ CREATE TABLE turmas (
 CREATE TABLE turma_detalhes (
     id INT AUTO_INCREMENT PRIMARY KEY,
 
+    id_turma INT NOT NULL,
     id_modulo INT NOT NULL,
     id_formador INT NOT NULL,
     id_sala INT NOT NULL,
@@ -178,9 +179,10 @@ CREATE TABLE turma_detalhes (
     sequencia INT NOT NULL,          -- ordem do módulo dentro da turma
     horas_planeadas INT NOT NULL,    -- ajuda a controlar máximo de horas do módulo
 
-    UNIQUE (id_modulo),
-    UNIQUE (sequencia),
+    UNIQUE (id_turma, id_modulo),    -- o mesmo módulo só aparece uma vez por turma
+    UNIQUE (id_turma, sequencia),    -- a sequência é única dentro da turma
 
+    FOREIGN KEY (id_turma) REFERENCES turmas(id) ON DELETE CASCADE,
     FOREIGN KEY (id_modulo) REFERENCES modulos(id) ON DELETE RESTRICT,
     FOREIGN KEY (id_formador) REFERENCES formadores(id) ON DELETE RESTRICT,
     FOREIGN KEY (id_sala) REFERENCES salas(id) ON DELETE RESTRICT

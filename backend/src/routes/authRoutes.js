@@ -57,7 +57,7 @@ router.get('/google/callback',
         };
         const token = generateToken(userObj);
 
-        res.redirect(`${frontendUrl}/login?token=${token}&user=${req.user.email}&name=${nameEncoded}&id=${req.user.id}`);
+        res.redirect(`${frontendUrl}/login?token=${token}&user=${req.user.email}&name=${nameEncoded}&id=${req.user.id}&role=${req.user.tipo_utilizador}`);
     }
 );
 

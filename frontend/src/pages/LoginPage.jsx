@@ -19,6 +19,7 @@ function LoginPage() {
         const userEmail = searchParams.get('user') || searchParams.get('email')
         const userName = searchParams.get('name')
         const userId = searchParams.get('id')
+        const userRole = searchParams.get('role')
         const is2FARequired = searchParams.get('requires2FA')
 
         if (is2FARequired === 'true') {
@@ -35,7 +36,8 @@ function LoginPage() {
                     id: userId,
                     email: userEmail,
                     nome_completo: userName || 'Utilizador Google',
-                    nome: userName
+                    nome: userName,
+                    tipo_utilizador: userRole
                 }))
             }
             setMessage({ text: 'Login com Google efetuado! A redirecionar...', type: 'success' })

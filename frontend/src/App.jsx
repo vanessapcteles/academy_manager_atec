@@ -11,6 +11,12 @@ import Disable2FAPage from './pages/Disable2FAPage';
 import UsersPage from './pages/UsersPage';
 import RoomsPage from './pages/RoomsPage';
 import TurmasPage from './pages/TurmasPage';
+import ModulesPage from './pages/ModulesPage';
+import FormandosPage from './pages/FormandosPage';
+import FormadoresPage from './pages/FormadoresPage';
+import TurmaDetailsPage from './pages/TurmaDetailsPage';
+import TurmaSchedulePage from './pages/TurmaSchedulePage';
+import ChatWidget from './components/ChatWidget';
 import { authService } from './services/authService';
 import './App.css';
 
@@ -23,6 +29,7 @@ const PrivateRoute = ({ children }) => {
 function App() {
   return (
     <Router>
+      <ChatWidget />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -37,6 +44,12 @@ function App() {
         <Route path="/users" element={<PrivateRoute><UsersPage /></PrivateRoute>} />
         <Route path="/rooms" element={<PrivateRoute><RoomsPage /></PrivateRoute>} />
         <Route path="/turmas" element={<PrivateRoute><TurmasPage /></PrivateRoute>} />
+        <Route path="/turmas/:id" element={<PrivateRoute><TurmaDetailsPage /></PrivateRoute>} />
+        <Route path="/turmas/:id/schedule" element={<PrivateRoute><TurmaSchedulePage /></PrivateRoute>} />
+        <Route path="/modules" element={<PrivateRoute><ModulesPage /></PrivateRoute>} />
+        <Route path="/formandos" element={<PrivateRoute><FormandosPage /></PrivateRoute>} />
+        <Route path="/formadores" element={<PrivateRoute><FormadoresPage /></PrivateRoute>} />
+        <Route path="/disable-2fa" element={<Disable2FAPage />} />
         <Route path="/disable-2fa" element={<Disable2FAPage />} />
 
         {/* Redirecionar página inicial para dashboard se logado? Opcional */}

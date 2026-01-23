@@ -3,7 +3,12 @@ import { db } from '../config/db.js';
 // Listar todos os cursos
 export const getCourses = async (req, res) => {
     try {
-        const [courses] = await db.query('SELECT * FROM cursos ORDER BY nome_curso ASC');
+        const [courses] = await db.query(`
+            SELECT c.*, 
+            (SELECT MIN(t.data_inicio) FROM turmas t WHERE t.id_curso = c.id AND t.data_inicio >= CURDATE()) as proxima_data_inicio
+            FROM cursos c 
+            ORDER BY c.nome_curso ASC
+        `);
         return res.status(200).json(courses);
     } catch (error) {
         console.error('Erro ao listar cursos:', error);

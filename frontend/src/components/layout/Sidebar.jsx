@@ -26,8 +26,8 @@ const Sidebar = () => {
         { icon: BookOpen, label: 'Cursos', path: '/courses' },
         { icon: Users, label: 'Turmas', path: '/turmas' },
         { icon: GraduationCap, label: 'Módulos', path: '/modules' },
-        { icon: Users, label: 'Formandos', path: '/students' },
-        { icon: Users, label: 'Formadores', path: '/trainers' },
+        { icon: Users, label: 'Formandos', path: '/formandos' },
+        { icon: Users, label: 'Formadores', path: '/formadores' },
         ...(canManageRooms ? [{ icon: DoorOpen, label: 'Salas', path: '/rooms' }] : []),
         { icon: Calendar, label: 'Horários', path: '/schedules' },
     ];

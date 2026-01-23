@@ -1,5 +1,13 @@
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
+export const getAuthHeader = () => {
+    const token = localStorage.getItem('auth_token');
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+};
+
 export const authService = {
     API_URL,
     login: async (email, password) => {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { turmaService } from '../services/turmaService';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { motion } from 'framer-motion';
@@ -6,7 +7,7 @@ import {
     Users,
     Plus,
     Search,
-    Calendar,
+    Calendar as CalendarIcon,
     BookOpen,
     Edit2,
     Trash2,
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react';
 
 function TurmasPage() {
+    const navigate = useNavigate();
     const [turmas, setTurmas] = useState([]);
     const [cursos, setCursos] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -140,6 +142,12 @@ function TurmasPage() {
                                 display: 'flex',
                                 gap: '0.5rem'
                             }}>
+                                <button onClick={() => navigate(`/turmas/${turma.id}/schedule`)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} title="Horário">
+                                    <CalendarIcon size={16} />
+                                </button>
+                                <button onClick={() => navigate(`/turmas/${turma.id}`)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} title="Gerir Módulos">
+                                    <BookOpen size={16} />
+                                </button>
                                 <button onClick={() => openEdit(turma)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
                                     <Edit2 size={16} />
                                 </button>
@@ -166,7 +174,7 @@ function TurmasPage() {
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                    <Calendar size={16} />
+                                    <CalendarIcon size={16} />
                                     <span>{new Date(turma.data_inicio).toLocaleDateString()} - {new Date(turma.data_fim).toLocaleDateString()}</span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
@@ -175,26 +183,7 @@ function TurmasPage() {
                                 </div>
                             </div>
 
-                            <div style={{
-                                marginTop: '1.5rem',
-                                paddingTop: '1rem',
-                                borderTop: '1px solid var(--border-glass)',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center'
-                            }}>
-                                <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', flex: 1, marginRight: '1rem', overflow: 'hidden' }}>
-                                    <div style={{
-                                        height: '100%',
-                                        width: turma.estado === 'terminado' ? '100%' : turma.estado === 'a decorrer' ? '50%' : '5%',
-                                        background: getStatusColor(turma.estado),
-                                        borderRadius: '3px'
-                                    }} />
-                                </div>
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                    {turma.estado === 'planeado' ? '0%' : turma.estado === 'a decorrer' ? '50%' : '100%'}
-                                </span>
-                            </div>
+
                         </motion.div>
                     ))}
                 </div>

@@ -7,6 +7,12 @@ import userRoutes from './routes/userRoutes.js';
 import roomRoutes from './routes/roomRoutes.js';
 import turmaRoutes from './routes/turmaRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
+import moduleRoutes from './routes/moduleRoutes.js';
+import fileRoutes from './routes/fileRoutes.js';
+import formandoRoutes from './routes/formandoRoutes.js';
+import formadorRoutes from './routes/formadorRoutes.js';
+import turmaDetalhesRoutes from './routes/turmaDetalhesRoutes.js';
+import horarioRoutes from './routes/horarioRoutes.js';
 
 const app = express();
 
@@ -19,6 +25,12 @@ app.use('/api/users', userRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/turmas', turmaRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/modules', moduleRoutes);
+app.use('/api/files', fileRoutes);
+app.use('/api/formandos', formandoRoutes);
+app.use('/api/formadores', formadorRoutes);
+app.use('/api/turma-details', turmaDetalhesRoutes);
+app.use('/api/schedules', horarioRoutes);
 
 app.listen(3001, () => {
   console.log('Servidor a correr em http://localhost:3001');

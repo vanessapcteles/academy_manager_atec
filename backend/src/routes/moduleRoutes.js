@@ -1,0 +1,20 @@
+import express from 'express';
+import {
+    getModules,
+    createModule,
+    updateModule,
+    deleteModule
+} from '../controllers/moduleController.js';
+import { authenticateToken, authorizeRole } from '../middleware/authMiddleware.js';
+
+const router = express.Router();
+
+// Public routes (or protected if needed)
+router.use(authenticateToken); // All routes require login
+
+router.get('/', getModules);
+router.post('/', authorizeRole(['ADMIN', 'SECRETARIA']), createModule);
+router.put('/:id', authorizeRole(['ADMIN', 'SECRETARIA']), updateModule);
+router.delete('/:id', authorizeRole(['ADMIN', 'SECRETARIA']), deleteModule);
+
+export default router;

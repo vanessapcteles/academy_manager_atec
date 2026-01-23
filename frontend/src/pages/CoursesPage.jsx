@@ -22,6 +22,7 @@ function CoursesPage() {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [filter, setFilter] = useState('all'); // 'all', 'ongoing', 'upcoming'
     const [showModal, setShowModal] = useState(false);
     const [editingCourse, setEditingCourse] = useState(null);
     const [formData, setFormData] = useState({
@@ -99,24 +100,76 @@ function CoursesPage() {
         }
     };
 
-    const filteredCourses = courses.filter(course =>
-        course.nome_curso.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        course.area.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredCourses = courses.filter(course => {
+        const matchesSearch =
+            course.nome_curso.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            course.area.toLowerCase().includes(searchTerm.toLowerCase());
+
+        let matchesFilter = true;
+        if (filter === 'ongoing') {
+            matchesFilter = course.estado === 'a decorrer';
+        } else if (filter === 'upcoming') {
+            if (!course.proxima_data_inicio) {
+                matchesFilter = false;
+            } else {
+                const start = new Date(course.proxima_data_inicio);
+                const now = new Date();
+                const diffTime = start - now;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                matchesFilter = diffDays >= 0 && diffDays <= 60;
+            }
+        }
+
+        return matchesSearch && matchesFilter;
+    });
 
     return (
         <DashboardLayout>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div style={{ position: 'relative', width: '300px' }}>
-                    <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} size={18} />
-                    <input
-                        type="text"
-                        placeholder="Pesquisar curso..."
-                        className="input-field"
-                        style={{ paddingLeft: '3rem' }}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+
+                    {/* Filtros */}
+                    <div className="glass-card" style={{ padding: '0.3rem', display: 'flex', gap: '0.5rem', borderRadius: '12px' }}>
+                        <button
+                            onClick={() => setFilter('all')}
+                            style={{
+                                background: filter === 'all' ? 'rgba(255,255,255,0.15)' : 'transparent',
+                                border: 'none', color: 'white', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem'
+                            }}
+                        >
+                            Todos
+                        </button>
+                        <button
+                            onClick={() => setFilter('ongoing')}
+                            style={{
+                                background: filter === 'ongoing' ? 'rgba(59, 130, 246, 0.4)' : 'transparent',
+                                border: 'none', color: 'white', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem'
+                            }}
+                        >
+                            A Decorrer
+                        </button>
+                        <button
+                            onClick={() => setFilter('upcoming')}
+                            style={{
+                                background: filter === 'upcoming' ? 'rgba(16, 185, 129, 0.4)' : 'transparent',
+                                border: 'none', color: 'white', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem'
+                            }}
+                        >
+                            Iniciam em 60 dias
+                        </button>
+                    </div>
+
+                    <div style={{ position: 'relative', width: '250px' }}>
+                        <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} size={18} />
+                        <input
+                            type="text"
+                            placeholder="Pesquisar curso..."
+                            className="input-field"
+                            style={{ paddingLeft: '3rem' }}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                 </div>
                 <button className="btn-primary" onClick={() => { setEditingCourse(null); setFormData({ nome_curso: '', area: 'Informática', estado: 'planeado' }); setShowModal(true); }}>
                     <Plus size={20} /> Novo Curso
