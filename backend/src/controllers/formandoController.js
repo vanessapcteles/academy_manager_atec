@@ -57,3 +57,21 @@ export const listFormandos = async (req, res) => {
         return res.status(500).json({ message: 'Erro ao listar formandos' });
     }
 };
+// Obter histórico académico (Cursos e notas)
+export const getFormandoAcademicRecord = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const [records] = await db.query(`
+            SELECT c.nome_curso, i.nota_final, t.codigo_turma, t.data_inicio, t.data_fim
+            FROM inscricoes i
+            JOIN turmas t ON i.id_turma = t.id
+            JOIN cursos c ON t.id_curso = c.id
+            JOIN formandos f ON i.id_formando = f.id
+            WHERE f.utilizador_id = ?
+        `, [userId]);
+
+        return res.json(records);
+    } catch (error) {
+        return res.status(500).json({ message: 'Erro ao obter registo académico' });
+    }
+};

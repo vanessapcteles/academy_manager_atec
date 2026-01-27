@@ -61,6 +61,31 @@ router.get('/google/callback',
     }
 );
 
+// AUTH FACEBOOK
+router.get('/facebook', passport.authenticate('facebook', { scope: ['email'] }));
+
+router.get('/facebook/callback',
+    passport.authenticate('facebook', { session: false, failureRedirect: '/login' }),
+    (req, res) => {
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const nameEncoded = encodeURIComponent(req.user.nome_completo || req.user.nome || '');
+
+        if (req.user.two_fa_enabled === 1 || req.user.two_fa_enabled === true) {
+            return res.redirect(`${frontendUrl}/login?requires2FA=true&email=${req.user.email}&name=${nameEncoded}`);
+        }
+
+        const userObj = {
+            id: req.user.id,
+            nome_completo: req.user.nome_completo || req.user.nome,
+            email: req.user.email,
+            tipo_utilizador: req.user.tipo_utilizador
+        };
+        const token = generateToken(userObj);
+
+        res.redirect(`${frontendUrl}/login?token=${token}&user=${req.user.email}&name=${nameEncoded}&id=${req.user.id}&role=${req.user.tipo_utilizador}`);
+    }
+);
+
 export default router;
 
 

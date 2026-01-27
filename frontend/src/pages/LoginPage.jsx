@@ -104,6 +104,10 @@ function LoginPage() {
         window.location.href = `${authService.API_URL}/api/auth/google`;
     }
 
+    const handleFacebookLogin = () => {
+        window.location.href = `${authService.API_URL}/api/auth/facebook`;
+    }
+
     return (
         <div style={{
             minHeight: '100vh',
@@ -234,7 +238,7 @@ function LoginPage() {
                                     </svg>
                                     Google
                                 </button>
-                                <button type="button" style={{
+                                <button type="button" onClick={handleFacebookLogin} style={{
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',

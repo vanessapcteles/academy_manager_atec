@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { authService } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { Shield, User, Mail, Save, Smartphone, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { Shield, User, Mail, Save, Smartphone, ShieldAlert, CheckCircle2, Upload, Camera } from 'lucide-react';
+import { API_URL, getAuthHeader } from '../services/authService';
 import { motion } from 'framer-motion';
 
 function ProfilePage() {
@@ -14,6 +15,8 @@ function ProfilePage() {
     const [message, setMessage] = useState({ text: '', type: '' });
     const [step, setStep] = useState('initial');
     const [loading, setLoading] = useState(false);
+    const [profilePhoto, setProfilePhoto] = useState(null);
+    const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
         const currentUser = authService.getCurrentUser();
@@ -25,7 +28,57 @@ function ProfilePage() {
         setNomeCompleto(currentUser.nome_completo || currentUser.nome || '');
         // Corrigido para o nome correto da coluna na DB
         if (currentUser.two_fa_enabled) setStep('verified');
+        loadProfilePhoto(currentUser.id);
     }, [navigate]);
+
+    const loadProfilePhoto = async (userId) => {
+        try {
+            const response = await fetch(`${API_URL}/api/files/user/${userId}/photo`, {
+                headers: getAuthHeader()
+            });
+            if (response.ok) {
+                const blob = await response.blob();
+                const base64 = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+                setProfilePhoto(base64);
+            }
+        } catch (e) {
+            console.log("Sem foto de perfil");
+        }
+    };
+
+    const handlePhotoUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('categoria', 'foto');
+
+        setUploading(true);
+        try {
+            const token = localStorage.getItem('auth_token');
+            const response = await fetch(`${API_URL}/api/files/user/${user.id}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            if (response.ok) {
+                loadProfilePhoto(user.id);
+                setMessage({ text: 'Foto de perfil atualizada!', type: 'success' });
+                // Trigger refresh in potential other components (like DashboardLayout)
+                window.dispatchEvent(new Event('storage'));
+            }
+        } catch (error) {
+            setMessage({ text: 'Erro ao carregar foto', type: 'error' });
+        } finally {
+            setUploading(false);
+        }
+    };
 
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
@@ -105,6 +158,51 @@ function ProfilePage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
                         <User className="text-gradient" size={24} />
                         <h3 style={{ fontSize: '1.5rem' }}>Informações Pessoais</h3>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2.5rem' }}>
+                        <div style={{ position: 'relative' }}>
+                            <div style={{
+                                width: '120px',
+                                height: '120px',
+                                borderRadius: '30px',
+                                border: '3px solid var(--primary)',
+                                background: 'rgba(255,255,255,0.05)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                overflow: 'hidden',
+                                boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
+                            }}>
+                                {profilePhoto ? (
+                                    <img src={profilePhoto} alt="Perfil" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                    <User size={60} style={{ opacity: 0.2 }} />
+                                )}
+                            </div>
+                            <label style={{
+                                position: 'absolute',
+                                bottom: '-10px',
+                                right: '-10px',
+                                width: '40px',
+                                height: '40px',
+                                backgroundColor: 'var(--primary)',
+                                borderRadius: '15px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                border: '4px solid #0f172a',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                                transition: 'transform 0.2s'
+                            }} className="hover-scale">
+                                <Camera size={20} color="white" />
+                                <input type="file" onChange={handlePhotoUpload} style={{ display: 'none' }} disabled={uploading} />
+                            </label>
+                        </div>
+                        <p style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                            {uploading ? 'A carregar...' : 'Clique na câmara para alterar a sua foto'}
+                        </p>
                     </div>
 
                     <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>

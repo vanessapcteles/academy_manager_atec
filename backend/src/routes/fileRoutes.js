@@ -1,6 +1,6 @@
 import express from 'express';
 import { upload } from '../config/upload.js';
-import { uploadFile, getUserFiles, getFile, deleteFile } from '../controllers/fileController.js';
+import { uploadFile, getUserFiles, getFile, deleteFile, getLatestUserPhoto } from '../controllers/fileController.js';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -10,6 +10,7 @@ router.use(authenticateToken);
 
 // Listar ficheiros de um user (id do user na URL)
 router.get('/user/:id', getUserFiles);
+router.get('/user/:id/photo', getLatestUserPhoto);
 
 // Upload (id do user na URL)
 // 'file' corresponde ao name="file" no form data do frontend

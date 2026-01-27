@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { Users, Search, Edit2, Save, X, FileText, Upload, Download, Trash2, Smartphone, MapPin } from 'lucide-react';
+import { Users, Search, Edit2, Save, X, FileText, Upload, Download, Trash2, Smartphone, MapPin, Printer } from 'lucide-react';
 import { API_URL } from '../services/authService';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 function FormandosPage() {
     const [formandos, setFormandos] = useState([]);
@@ -12,6 +14,8 @@ function FormandosPage() {
     const [isEditing, setIsEditing] = useState(false);
     const [files, setFiles] = useState([]);
     const [uploading, setUploading] = useState(false);
+    const [exporting, setExporting] = useState(false);
+    const [profilePhoto, setProfilePhoto] = useState(null);
 
     // Form States
     const [editData, setEditData] = useState({
@@ -50,16 +54,131 @@ function FormandosPage() {
             const filesRes = await fetch(`${API_URL}/api/files/user/${userId}`, { headers: getAuthHeader() });
             const filesData = await filesRes.json();
 
-            setSelectedFormando({ ...profileData, id: userId }); // userId para identificação
+            setSelectedFormando({ ...profileData, id: userId });
             setFiles(filesData);
             setEditData({
                 morada: profileData.morada || '',
                 telemovel: profileData.telemovel || '',
                 data_nascimento: profileData.data_nascimento ? profileData.data_nascimento.split('T')[0] : ''
             });
+
+            // Carregar Foto com Auth
+            try {
+                const photoRes = await fetch(`${API_URL}/api/files/user/${userId}/photo`, { headers: getAuthHeader() });
+                if (photoRes.ok) {
+                    const blob = await photoRes.blob();
+                    const base64 = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(blob);
+                    });
+                    setProfilePhoto(base64);
+                } else {
+                    setProfilePhoto(null);
+                }
+            } catch (e) { setProfilePhoto(null); }
+
             setIsEditing(false);
         } catch (error) {
             console.error('Erro ao carregar detalhes:', error);
+        }
+    };
+
+    const handleExportPDF = async () => {
+        if (!selectedFormando) return;
+        setExporting(true);
+        try {
+            // 1. Obter registo académico
+            const recordsRes = await fetch(`${API_URL}/api/formandos/${selectedFormando.id}/academic`, { headers: getAuthHeader() });
+            const academicData = await recordsRes.json();
+            const academicRecords = Array.isArray(academicData) ? academicData : [];
+
+            // 2. Criar PDF
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.getWidth();
+
+            // Cabeçalho Premium
+            doc.setFillColor(30, 41, 59); // Slate-800
+            doc.rect(0, 0, pageWidth, 40, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.text('FICHA DO FORMANDO', 15, 25);
+
+            doc.setFontSize(10);
+            doc.text(`Gerado em: ${new Date().toLocaleDateString()}`, pageWidth - 15, 25, { align: 'right' });
+
+            // Usar a foto já carregada em memória (ou tentar de novo se falhar)
+            let photoData = profilePhoto;
+            if (!photoData) {
+                try {
+                    const photoRes = await fetch(`${API_URL}/api/files/user/${selectedFormando.id}/photo`, { headers: getAuthHeader() });
+                    if (photoRes.ok) {
+                        const blob = await photoRes.blob();
+                        photoData = await new Promise((resolve) => {
+                            const reader = new FileReader();
+                            reader.onloadend = () => resolve(reader.result);
+                            reader.readAsDataURL(blob);
+                        });
+                    }
+                } catch (e) { console.log("Sem foto disponível para o PDF"); }
+            }
+
+            // Dados Pessoais
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Dados Pessoais', 15, 55);
+            doc.line(15, 58, 60, 58);
+
+            // Inserir Foto se existir
+            if (photoData) {
+                doc.addImage(photoData, 'JPEG', pageWidth - 55, 50, 40, 40);
+                doc.setDrawColor(56, 189, 248);
+                doc.rect(pageWidth - 56, 49, 42, 42); // Moldura
+            }
+
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Nome: ${selectedFormando.nome_completo}`, 15, 68);
+            doc.text(`Email: ${selectedFormando.email}`, 15, 75);
+            doc.text(`Telemóvel: ${selectedFormando.telemovel || 'N/A'}`, 15, 82);
+            doc.text(`Morada: ${selectedFormando.morada || 'N/A'}`, 15, 89);
+            doc.text(`Data de Nascimento: ${selectedFormando.data_nascimento ? new Date(selectedFormando.data_nascimento).toLocaleDateString() : 'N/A'}`, 15, 96);
+
+            // Tabela de Avaliações
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Histórico Escolar', 15, 115);
+            doc.line(15, 118, 60, 118);
+
+            const tableRows = academicRecords.map(rec => [
+                rec.nome_curso,
+                rec.codigo_turma,
+                new Date(rec.data_inicio).toLocaleDateString(),
+                rec.nota_final ? `${rec.nota_final} val` : 'Em curso'
+            ]);
+
+            doc.autoTable({
+                startY: 125,
+                head: [['Curso', 'Turma', 'Data Início', 'Nota Final']],
+                body: tableRows,
+                headStyles: { fillColor: [56, 189, 248] }, // Primary color
+                theme: 'striped'
+            });
+
+            // Rodapé
+            const finalY = doc.lastAutoTable.finalY + 20;
+            doc.setFontSize(9);
+            doc.setTextColor(150);
+            doc.text('Este documento é um comprovativo interno da academia.', pageWidth / 2, finalY, { align: 'center' });
+
+            doc.save(`Ficha_${selectedFormando.nome_completo.replace(/\s+/g, '_')}.pdf`);
+        } catch (error) {
+            console.error('Erro ao exportar PDF:', error);
+            alert('Erro ao gerar PDF');
+        } finally {
+            setExporting(false);
         }
     };
 
@@ -84,26 +203,39 @@ function FormandosPage() {
         }
     };
 
-    const handleFileUpload = async (e) => {
+    const handleFileUpload = async (e, forcedCategory = null) => {
         const file = e.target.files[0];
         if (!file) return;
 
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('categoria', 'documento'); // Default
+        formData.append('categoria', forcedCategory || 'documento');
 
         setUploading(true);
         try {
-            // Upload
             await fetch(`${API_URL}/api/files/user/${selectedFormando.id}`, {
                 method: 'POST',
-                headers: getAuthHeader(), // FormData não leva Content-Type manual
+                headers: getAuthHeader(),
                 body: formData
             });
 
-            // Recarregar ficheiros
             const filesRes = await fetch(`${API_URL}/api/files/user/${selectedFormando.id}`, { headers: getAuthHeader() });
-            const filesData = await filesRes.json();
+            const filesData = await filesRes.json(); // Fetch updated files list
+
+            // Recarregar foto de perfil após upload
+            if (forcedCategory === 'foto') {
+                const photoRes = await fetch(`${API_URL}/api/files/user/${selectedFormando.id}/photo`, { headers: getAuthHeader() });
+                if (photoRes.ok) {
+                    const blob = await photoRes.blob();
+                    const base64 = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(blob);
+                    });
+                    setProfilePhoto(base64);
+                }
+            }
+
             setFiles(filesData);
 
         } catch (error) {
@@ -173,7 +305,6 @@ function FormandosPage() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: selectedFormando ? '1fr 1fr' : '1fr', gap: '2rem', transition: 'all 0.3s ease' }}>
-                {/* LISTA */}
                 <div className="glass-card">
                     {loading ? (
                         <p>A carregar...</p>
@@ -217,7 +348,6 @@ function FormandosPage() {
                     )}
                 </div>
 
-                {/* DETALHES */}
                 <AnimatePresence>
                     {selectedFormando && (
                         <motion.div
@@ -227,22 +357,64 @@ function FormandosPage() {
                             className="glass-card"
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
-                                <h3>Detalhes do Formando</h3>
+                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                    <h3>Detalhes do Formando</h3>
+                                    <button
+                                        onClick={handleExportPDF}
+                                        className="btn-glass"
+                                        style={{ color: 'var(--accent)', padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                                        disabled={exporting}
+                                    >
+                                        <Printer size={14} /> {exporting ? 'A gerar...' : 'Exportar PDF'}
+                                    </button>
+                                </div>
                                 <button onClick={() => setSelectedFormando(null)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
                                     <X size={20} />
                                 </button>
                             </div>
 
                             <div style={{ marginBottom: '2rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                    <h2 style={{ fontSize: '1.25rem' }}>{selectedFormando.nome_completo}</h2>
-                                    <button
-                                        onClick={() => setIsEditing(!isEditing)}
-                                        className="btn-glass"
-                                        style={{ padding: '0.5rem', color: 'var(--primary)' }}
-                                    >
-                                        <Edit2 size={16} />
-                                    </button>
+                                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                    <div style={{ position: 'relative' }}>
+                                        <div style={{
+                                            width: '80px', height: '80px', borderRadius: '20px', overflow: 'hidden',
+                                            border: '2px solid var(--primary)', background: 'rgba(255,255,255,0.05)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                        }}>
+                                            {profilePhoto ? (
+                                                <img
+                                                    src={profilePhoto}
+                                                    alt="Perfil"
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                />
+                                            ) : (
+                                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>
+                                                    {selectedFormando.nome_completo.substring(0, 2).toUpperCase()}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <label style={{
+                                            position: 'absolute', bottom: '-5px', right: '-5px',
+                                            background: 'var(--primary)', padding: '5px', borderRadius: '50%',
+                                            cursor: 'pointer', display: 'flex', border: '2px solid #0f172a'
+                                        }}>
+                                            <Upload size={12} />
+                                            <input type="file" onChange={(e) => handleFileUpload(e, 'foto')} style={{ display: 'none' }} />
+                                        </label>
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                                            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{selectedFormando.nome_completo}</h2>
+                                            <button
+                                                onClick={() => setIsEditing(!isEditing)}
+                                                className="btn-glass"
+                                                style={{ padding: '0.5rem', color: 'var(--primary)' }}
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
+                                        </div>
+                                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{selectedFormando.email}</p>
+                                    </div>
                                 </div>
 
                                 {isEditing ? (
@@ -291,7 +463,6 @@ function FormandosPage() {
                                 )}
                             </div>
 
-                            {/* FICHEIROS */}
                             <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '1.5rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                     <h4>Documentos</h4>

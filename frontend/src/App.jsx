@@ -16,6 +16,7 @@ import FormandosPage from './pages/FormandosPage';
 import FormadoresPage from './pages/FormadoresPage';
 import TurmaDetailsPage from './pages/TurmaDetailsPage';
 import TurmaSchedulePage from './pages/TurmaSchedulePage';
+import SchedulesPage from './pages/SchedulesPage';
 import ChatWidget from './components/ChatWidget';
 import { authService } from './services/authService';
 import './App.css';
@@ -49,6 +50,7 @@ function App() {
         <Route path="/modules" element={<PrivateRoute><ModulesPage /></PrivateRoute>} />
         <Route path="/formandos" element={<PrivateRoute><FormandosPage /></PrivateRoute>} />
         <Route path="/formadores" element={<PrivateRoute><FormadoresPage /></PrivateRoute>} />
+        <Route path="/schedules" element={<PrivateRoute><SchedulesPage /></PrivateRoute>} />
         <Route path="/disable-2fa" element={<Disable2FAPage />} />
         <Route path="/disable-2fa" element={<Disable2FAPage />} />
 

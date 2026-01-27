@@ -120,3 +120,75 @@ export const deleteLesson = async (req, res) => {
         return res.status(500).json({ message: 'Erro ao remover aula' });
     }
 };
+// Listar horários de um Formador
+export const getFormadorSchedule = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const [aulas] = await db.query(`
+            SELECT 
+                h.id, h.inicio, h.fim, m.nome_modulo,
+                t.codigo_turma, s.nome_sala
+            FROM horarios_aulas h
+            JOIN turma_detalhes td ON h.id_turma_detalhe = td.id
+            JOIN modulos m ON td.id_modulo = m.id
+            JOIN turmas t ON td.id_turma = t.id
+            JOIN formadores f ON td.id_formador = f.id
+            JOIN salas s ON td.id_sala = s.id
+            WHERE f.utilizador_id = ?
+            ORDER BY h.inicio ASC
+        `, [userId]);
+        return res.json(aulas);
+    } catch (error) {
+        return res.status(500).json({ message: 'Erro ao carregar horário do formador' });
+    }
+};
+
+// Listar ocupação de uma Sala
+export const getRoomSchedule = async (req, res) => {
+    try {
+        const { roomId } = req.params;
+        const [aulas] = await db.query(`
+            SELECT 
+                h.id, h.inicio, h.fim, m.nome_modulo,
+                t.codigo_turma, u.nome_completo as nome_formador
+            FROM horarios_aulas h
+            JOIN turma_detalhes td ON h.id_turma_detalhe = td.id
+            JOIN modulos m ON td.id_modulo = m.id
+            JOIN turmas t ON td.id_turma = t.id
+            JOIN formadores f ON td.id_formador = f.id
+            JOIN utilizadores u ON f.utilizador_id = u.id
+            WHERE td.id_sala = ?
+            ORDER BY h.inicio ASC
+        `, [roomId]);
+        return res.json(aulas);
+    } catch (error) {
+        return res.status(500).json({ message: 'Erro ao carregar ocupação da sala' });
+    }
+};
+// Listar TODOS os horários (Global)
+export const listAllLessons = async (req, res) => {
+    try {
+        const [aulas] = await db.query(`
+            SELECT 
+                h.id, 
+                h.inicio, 
+                h.fim, 
+                m.nome_modulo,
+                u.nome_completo as nome_formador,
+                s.nome_sala,
+                t.codigo_turma
+            FROM horarios_aulas h
+            JOIN turma_detalhes td ON h.id_turma_detalhe = td.id
+            JOIN modulos m ON td.id_modulo = m.id
+            JOIN turmas t ON td.id_turma = t.id
+            JOIN formadores f ON td.id_formador = f.id
+            JOIN utilizadores u ON f.utilizador_id = u.id
+            JOIN salas s ON td.id_sala = s.id
+            ORDER BY h.inicio ASC
+        `);
+        return res.json(aulas);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Erro ao carregar todos os horários' });
+    }
+};

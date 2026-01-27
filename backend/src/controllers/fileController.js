@@ -70,3 +70,21 @@ export const deleteFile = async (req, res) => {
         return res.status(500).json({ message: 'Erro ao eliminar ficheiro.' });
     }
 };
+// Obter Foto de Perfil (a mais recente)
+export const getLatestUserPhoto = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [files] = await db.query(
+            'SELECT * FROM ficheiros_anexos WHERE utilizador_id = ? AND categoria = "foto" ORDER BY data_upload DESC LIMIT 1',
+            [id]
+        );
+
+        if (files.length === 0) return res.status(404).json({ message: 'Foto não encontrada.' });
+
+        const file = files[0];
+        res.setHeader('Content-Type', file.tipo_ficheiro);
+        return res.send(file.dados);
+    } catch (error) {
+        return res.status(500).json({ message: 'Erro ao obter foto.' });
+    }
+};

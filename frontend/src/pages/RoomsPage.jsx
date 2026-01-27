@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
 import { roomService } from '../services/roomService';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
+import format from 'date-fns/format';
+import parse from 'date-fns/parse';
+import startOfWeek from 'date-fns/startOfWeek';
+import getDay from 'date-fns/getDay';
+import pt from 'date-fns/locale/pt';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 import {
     DoorOpen,
     Plus,
@@ -11,8 +18,13 @@ import {
     Edit2,
     Trash2,
     X,
-    Save
+    Save,
+    Calendar as CalendarIcon
 } from 'lucide-react';
+import { horarioService } from '../services/horarioService';
+
+const locales = { 'pt': pt };
+const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
 
 function RoomsPage() {
     const [rooms, setRooms] = useState([]);
@@ -20,6 +32,9 @@ function RoomsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [editingRoom, setEditingRoom] = useState(null);
+    const [viewingSchedule, setViewingSchedule] = useState(null);
+    const [roomEvents, setRoomEvents] = useState([]);
+
     const [formData, setFormData] = useState({
         nome: '',
         capacidade: '',
@@ -38,6 +53,22 @@ function RoomsPage() {
             console.error(error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleViewSchedule = async (room) => {
+        try {
+            const data = await horarioService.getRoomSchedule(room.id);
+            const formatted = data.map(ev => ({
+                id: ev.id,
+                title: `${ev.nome_modulo} (${ev.codigo_turma})`,
+                start: new Date(ev.inicio),
+                end: new Date(ev.fim)
+            }));
+            setRoomEvents(formatted);
+            setViewingSchedule(room);
+        } catch (error) {
+            alert('Erro ao carregar horário da sala');
         }
     };
 
@@ -71,7 +102,7 @@ function RoomsPage() {
     const openEdit = (room) => {
         setEditingRoom(room);
         setFormData({
-            nome: room.nome,
+            nome: room.nome_sala, // Corrigido para nome_sala
             capacidade: room.capacidade,
             localizacao: room.localizacao
         });
@@ -79,7 +110,7 @@ function RoomsPage() {
     };
 
     const filteredRooms = rooms.filter(room =>
-        room.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        room.nome_sala?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         room.localizacao?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -139,27 +170,84 @@ function RoomsPage() {
                                     <DoorOpen size={24} />
                                 </div>
                                 <div>
-                                    <h3 style={{ fontSize: '1.25rem', fontWeight: '600' }}>{room.nome}</h3>
+                                    <h3 style={{ fontSize: '1.25rem', fontWeight: '600' }}>{room.nome_sala}</h3>
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                                    <Users size={16} /> <span>Capacidade: <strong>{room.capacidade}</strong> utilizadores</span>
+                                    <Users size={16} /> <span>Capacidade: <strong>{room.capacidade}</strong></span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                                     <MapPin size={16} /> <span>{room.localizacao}</span>
                                 </div>
                             </div>
+
+                            <button
+                                onClick={() => handleViewSchedule(room)}
+                                className="btn-glass"
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                            >
+                                <CalendarIcon size={16} /> Ver Alocação
+                            </button>
                         </motion.div>
                     ))}
-                    {filteredRooms.length === 0 && !loading && (
-                        <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-                            Nenhuma sala encontrada.
-                        </div>
-                    )}
                 </div>
             )}
+
+            {/* Modal de Ocupação da Sala */}
+            <AnimatePresence>
+                {viewingSchedule && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(10px)'
+                    }}>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            className="glass-card"
+                            style={{ maxWidth: '900px', width: '95%', height: '80vh', padding: '2rem', color: 'white' }}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                                <div>
+                                    <h2>Estado de Alocação: {viewingSchedule.nome_sala}</h2>
+                                    <p style={{ color: 'var(--text-secondary)' }}>{viewingSchedule.localizacao}</p>
+                                </div>
+                                <button onClick={() => setViewingSchedule(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            <div style={{ height: 'calc(100% - 100px)', color: 'black' }}>
+                                <style>{`
+                                    .rbc-calendar { color: white; }
+                                    .rbc-off-range-bg { background: rgba(255,255,255,0.05); }
+                                    .rbc-header { color: var(--text-secondary); border-bottom: 1px solid var(--border-glass); }
+                                    .rbc-today { background: rgba(59, 130, 246, 0.1); }
+                                    .rbc-event { background-color: var(--accent); border: none; }
+                                    .rbc-time-view, .rbc-month-view { border: 1px solid var(--border-glass); }
+                                    .rbc-timeslot-group, .rbc-day-bg { border-bottom: 1px solid rgba(255,255,255,0.05); }
+                                    .rbc-time-content { border-top: 2px solid var(--border-glass); }
+                                `}</style>
+                                <Calendar
+                                    localizer={localizer}
+                                    events={roomEvents}
+                                    startAccessor="start"
+                                    endAccessor="end"
+                                    culture='pt'
+                                    messages={{
+                                        next: "Seguinte", previous: "Anterior", today: "Hoje",
+                                        month: "Mês", week: "Semana", day: "Dia"
+                                    }}
+                                    defaultView='week'
+                                />
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Modal de Criação/Edição */}
             {showModal && (

@@ -1,5 +1,5 @@
 import express from 'express';
-import { getFormandoProfile, updateFormandoProfile, listFormandos } from '../controllers/formandoController.js';
+import { getFormandoProfile, updateFormandoProfile, listFormandos, getFormandoAcademicRecord } from '../controllers/formandoController.js';
 import { authenticateToken, authorizeRole } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -8,6 +8,7 @@ router.use(authenticateToken);
 
 router.get('/', listFormandos);
 router.get('/:userId/profile', getFormandoProfile);
+router.get('/:userId/academic', getFormandoAcademicRecord);
 router.put('/:userId/profile', updateFormandoProfile);
 
 export default router;

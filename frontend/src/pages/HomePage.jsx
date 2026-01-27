@@ -1,63 +1,179 @@
+import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { BookOpen, Users, GraduationCap, Calendar } from 'lucide-react';
+import { BookOpen, Users, GraduationCap, Calendar, BarChart3, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { dashboardService } from '../services/dashboardService';
+import { motion } from 'framer-motion';
 
 function HomePage() {
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadStats = async () => {
+            try {
+                const statsData = await dashboardService.getStats();
+                setData(statsData);
+            } catch (error) {
+                console.error("Erro ao carregar dashboard:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadStats();
+    }, []);
+
     const stats = [
-        { label: 'Cursos Ativos', value: '12', icon: BookOpen, color: 'var(--primary)' },
-        { label: 'Total Formandos', value: '156', icon: Users, color: 'var(--secondary)' },
-        { label: 'Módulos', value: '48', icon: GraduationCap, color: 'var(--accent)' },
-        { label: 'Aulas Hoje', value: '8', icon: Calendar, color: '#10b981' },
+        {
+            label: 'Cursos Terminados',
+            value: data?.stats.cursosTerminados || '0',
+            icon: CheckCircle2,
+            color: '#10b981', // Verde para sucesso/conclusão
+            desc: 'Histórico concluído'
+        },
+        {
+            label: 'Cursos a Decorrer',
+            value: data?.stats.cursosADecorrer || '0',
+            icon: BookOpen,
+            color: 'var(--primary)',
+            desc: 'Em curso atualmente'
+        },
+        {
+            label: 'Formandos Ativos',
+            value: data?.stats.formandosAtivos || '0',
+            icon: Users,
+            color: 'var(--secondary)',
+            desc: 'Frequentando no momento'
+        }
     ];
+
+    if (loading) {
+        return (
+            <DashboardLayout>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                    <p>Carregando dashboard...</p>
+                </div>
+            </DashboardLayout>
+        );
+    }
 
     return (
         <DashboardLayout>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{ marginBottom: '2.5rem' }}
+            >
+                <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>Estatísticas Académicas</h1>
+                <p style={{ color: 'var(--text-secondary)' }}>Resumo em tempo real do progresso da academia.</p>
+            </motion.div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
                 {stats.map((stat, index) => (
-                    <div key={index} className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                    <motion.div
+                        key={index}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="glass-card"
+                        style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', position: 'relative', overflow: 'hidden' }}
+                    >
                         <div style={{
                             padding: '1rem',
                             borderRadius: '12px',
-                            background: `rgba(${stat.color === 'var(--primary)' ? '56, 189, 248' : '99, 102, 241'}, 0.1)`,
+                            background: `rgba(${stat.color === 'var(--primary)' ? '56, 189, 248' : stat.color === 'var(--secondary)' ? '99, 102, 241' : '16, 185, 129'}, 0.1)`,
                             color: stat.color
                         }}>
                             <stat.icon size={28} />
                         </div>
                         <div>
                             <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{stat.label}</p>
-                            <h3 style={{ fontSize: '1.5rem', marginTop: '0.25rem' }}>{stat.value}</h3>
+                            <h3 style={{ fontSize: '1.75rem', fontWeight: '700', marginTop: '0.25rem' }}>{stat.value}</h3>
                         </div>
-                    </div>
+                    </motion.div>
                 ))}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
                 <div className="glass-card">
-                    <h3 style={{ marginBottom: '1.5rem' }}>Próximas Atividades</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <TrendingUp size={20} color="var(--primary)" /> Top 10 Formadores (Horas)
+                        </h3>
+                    </div>
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {[1, 2, 3].map((_, i) => (
-                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', borderRadius: '10px', background: 'rgba(255,255,255,0.03)' }}>
-                                <div>
-                                    <p style={{ fontWeight: '500' }}>Aula de Programação Avançada</p>
-                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Sala 12 • 14:00 - 17:00</p>
+                        {data?.charts.topFormadores.length > 0 ? (
+                            data.charts.topFormadores.map((formador, i) => (
+                                <div key={i} style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    padding: '1rem',
+                                    borderRadius: '12px',
+                                    background: 'rgba(255,255,255,0.03)',
+                                    alignItems: 'center'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <div style={{
+                                            width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold'
+                                        }}>
+                                            {i + 1}
+                                        </div>
+                                        <p style={{ fontWeight: '500' }}>{formador.nome_completo}</p>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <span className="text-gradient" style={{ fontWeight: '700' }}>{formador.total_horas}h</span>
+                                        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>lecionadas</p>
+                                    </div>
                                 </div>
-                                <span className="text-gradient" style={{ fontWeight: '600' }}>Em breve</span>
-                            </div>
-                        ))}
+                            ))
+                        ) : (
+                            <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>Ainda não há dados de aulas registadas.</p>
+                        )}
                     </div>
                 </div>
 
-                <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
-                    <h3 style={{ marginBottom: '1rem' }}>Estado do Sistema</h3>
-                    <div style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto 1.5rem' }}>
-                        <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
-                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
-                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--primary)" strokeWidth="3" strokeDasharray="85, 100" />
-                        </svg>
-                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-                            <h2 style={{ fontSize: '1.5rem' }}>85%</h2>
-                        </div>
+                <div className="glass-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                    <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <BarChart3 size={20} color="var(--secondary)" /> Cursos por Área
+                    </h3>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '1rem' }}>
+                        {data?.charts.cursosPorArea.map((item, i) => {
+                            const total = data.charts.cursosPorArea.reduce((acc, curr) => acc + curr.count, 0);
+                            const percentage = Math.round((item.count / total) * 100);
+
+                            return (
+                                <div key={i}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                                        <span>{item.area}</span>
+                                        <span style={{ fontWeight: '600' }}>{item.count} ({percentage}%)</span>
+                                    </div>
+                                    <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${percentage}%` }}
+                                            transition={{ duration: 1, delay: 0.5 }}
+                                            style={{
+                                                height: '100%',
+                                                background: item.area === 'Informática' ? 'var(--primary)' : item.area === 'Robótica' ? 'var(--secondary)' : 'var(--accent)',
+                                                borderRadius: '4px'
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {data?.charts.cursosPorArea.length === 0 && (
+                            <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>Sem cursos registados.</p>
+                        )}
                     </div>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Capacidade utilizada das salas hoje.</p>
+
+                    <div style={{ marginTop: 'auto', padding: '1.5rem', borderRadius: '15px', background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.1)' }}>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                            💡 <strong>Dica:</strong> Pode gerir todos os cursos e turmas nos respetivos menus laterais.
+                        </p>
+                    </div>
                 </div>
             </div>
         </DashboardLayout>

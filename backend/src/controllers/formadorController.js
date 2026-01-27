@@ -63,3 +63,22 @@ export const listFormadores = async (req, res) => {
         return res.status(500).json({ message: 'Erro ao listar formadores' });
     }
 };
+// Obter histórico de lecionação
+export const getFormadorHistory = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const [history] = await db.query(`
+            SELECT m.nome_modulo, c.nome_curso, t.codigo_turma, t.data_inicio, t.data_fim
+            FROM turma_detalhes td
+            JOIN modulos m ON td.id_modulo = m.id
+            JOIN turmas t ON td.id_turma = t.id
+            JOIN cursos c ON t.id_curso = c.id
+            JOIN formadores f ON td.id_formador = f.id
+            WHERE f.utilizador_id = ?
+        `, [userId]);
+
+        return res.json(history);
+    } catch (error) {
+        return res.status(500).json({ message: 'Erro ao obter histórico do formador' });
+    }
+};
