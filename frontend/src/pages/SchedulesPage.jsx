@@ -6,7 +6,7 @@ import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
 import pt from 'date-fns/locale/pt';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import DashboardLayout from '../components/layout/DashboardLayout';
+
 import { horarioService } from '../services/horarioService';
 import { Calendar as CalendarIcon, Info } from 'lucide-react';
 
@@ -64,7 +64,7 @@ function SchedulesPage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <div style={{ padding: '0.75rem', borderRadius: '12px', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--primary)' }}>
                     <CalendarIcon size={24} />
@@ -123,7 +123,7 @@ function SchedulesPage() {
                     </p>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

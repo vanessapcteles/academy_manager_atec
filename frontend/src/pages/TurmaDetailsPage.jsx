@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import DashboardLayout from '../components/layout/DashboardLayout';
+
 import { turmaService } from '../services/turmaService';
 import { moduleService } from '../services/moduleService';
 import { roomService } from '../services/roomService';
@@ -94,7 +94,7 @@ function TurmaDetailsPage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div style={{ marginBottom: '2rem' }}>
                 <button
                     onClick={() => navigate('/turmas')}
@@ -241,7 +241,7 @@ function TurmaDetailsPage() {
                     </form>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

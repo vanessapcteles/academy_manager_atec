@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import DashboardLayout from '../components/layout/DashboardLayout';
+
 import { Users, Search, Edit2, Save, X, FileText, Upload, Download, Trash2, Smartphone, MapPin, Printer } from 'lucide-react';
 import { API_URL } from '../services/authService';
 import jsPDF from 'jspdf';
@@ -280,7 +280,7 @@ function FormandosPage() {
     );
 
     return (
-        <DashboardLayout>
+        <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ padding: '0.75rem', borderRadius: '12px', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--primary)' }}>
@@ -507,7 +507,7 @@ function FormandosPage() {
                     )}
                 </AnimatePresence>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
 

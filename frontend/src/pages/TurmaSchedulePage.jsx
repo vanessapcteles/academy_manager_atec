@@ -7,7 +7,7 @@ import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
 import pt from 'date-fns/locale/pt';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import DashboardLayout from '../components/layout/DashboardLayout';
+
 import { horarioService } from '../services/horarioService';
 import { turmaService } from '../services/turmaService'; // Para obter lista de módulos disponíveis
 import { ArrowLeft, Plus, Trash2, X, Calendar as CalendarIcon } from 'lucide-react';
@@ -119,7 +119,7 @@ function TurmaSchedulePage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                     <button
@@ -239,7 +239,7 @@ function TurmaSchedulePage() {
                 </div>
             )}
 
-        </DashboardLayout>
+        </>
     );
 }
 

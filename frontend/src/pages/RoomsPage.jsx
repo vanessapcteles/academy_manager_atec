@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { roomService } from '../services/roomService';
-import DashboardLayout from '../components/layout/DashboardLayout';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import format from 'date-fns/format';
@@ -115,7 +115,7 @@ function RoomsPage() {
     );
 
     return (
-        <DashboardLayout>
+        <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div style={{ position: 'relative', width: '300px' }}>
                     <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} size={18} />
@@ -308,7 +308,7 @@ function RoomsPage() {
                     </motion.div>
                 </div>
             )}
-        </DashboardLayout>
+        </>
     );
 }
 

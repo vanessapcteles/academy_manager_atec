@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { courseService } from '../services/courseService';
-import DashboardLayout from '../components/layout/DashboardLayout';
+import { authService } from '../services/authService';
+
 import { motion } from 'framer-motion';
 import {
     BookOpen,
@@ -126,7 +127,7 @@ function CoursesPage() {
     });
 
     return (
-        <DashboardLayout>
+        <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
 
@@ -328,7 +329,7 @@ function CoursesPage() {
                     </motion.div>
                 </div>
             )}
-        </DashboardLayout>
+        </>
     );
 }
 
