@@ -11,6 +11,8 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { horarioService } from '../services/horarioService';
 import { turmaService } from '../services/turmaService'; // Para obter lista de módulos disponíveis
 import { ArrowLeft, Plus, Trash2, X, Calendar as CalendarIcon } from 'lucide-react';
+import CalendarToolbar from '../components/ui/CalendarToolbar';
+import { useToast } from '../context/ToastContext';
 
 const locales = {
     'pt': pt,
@@ -29,10 +31,11 @@ function TurmaSchedulePage() {
     const navigate = useNavigate();
 
     const [events, setEvents] = useState([]);
-    const [turmaModules, setTurmaModules] = useState([]); // Módulos da turma para escolher
+    const [turmaModules, setTurmaModules] = useState([]);
     const [showModal, setShowModal] = useState(false);
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [currentView, setCurrentView] = useState('week');
 
-    // Form Data
     const [formData, setFormData] = useState({
         id_turma_detalhe: '',
         data: '',
@@ -118,6 +121,20 @@ function TurmaSchedulePage() {
         }
     };
 
+    const eventStyleGetter = (event) => ({
+        style: {
+            backgroundColor: 'var(--primary)',
+            borderRadius: '8px',
+            opacity: 0.9,
+            color: 'white',
+            border: 'none',
+            display: 'block',
+            padding: '4px 8px',
+            fontSize: '0.8rem',
+            fontWeight: '500'
+        }
+    });
+
     return (
         <>
             <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -175,38 +192,55 @@ function TurmaSchedulePage() {
                 </div>
 
                 {/* Calendário */}
-                <div className="glass-card" style={{ height: '700px', color: 'black' }}>
+                <div className="glass-card" style={{ padding: '1.5rem', minHeight: '750px' }}>
                     <style>{`
-                        .rbc-calendar { color: var(--text-primary); }
-                        .rbc-off-range-bg { background: rgba(255,255,255,0.02); }
-                        .rbc-header { color: var(--text-secondary); border-bottom: 1px solid var(--border-glass); padding: 10px 0; }
-                        .rbc-today { background: rgba(56, 189, 248, 0.05); }
-                        .rbc-time-content { border-top: 1px solid var(--border-glass); }
-                        .rbc-time-gutter { color: var(--text-secondary); }
-                        .rbc-timeslot-group { border-bottom: 1px solid var(--border-glass); }
-                        .rbc-toolbar button { color: white; border: 1px solid var(--border-glass); background: rgba(255,255,255,0.05); }
-                        .rbc-toolbar button:active, .rbc-toolbar button.rbc-active { background: var(--primary); box-shadow: none; }
-                        .rbc-event { padding: 4px 8px; font-size: 0.85rem; border-radius: 6px; }
+                        .rbc-calendar { font-family: inherit; }
+                        .rbc-off-range-bg { background: rgba(0,0,0,0.1); }
+                        .rbc-header { 
+                            color: var(--text-secondary); 
+                            border-bottom: 1px solid var(--border-glass) !important; 
+                            padding: 15px 0 !important;
+                            font-weight: 600;
+                            text-transform: uppercase;
+                            font-size: 0.75rem;
+                            letter-spacing: 0.05em;
+                        }
+                        .rbc-today { background: rgba(56, 189, 248, 0.1) !important; }
+                        .rbc-time-content { border-top: 2px solid var(--border-glass) !important; }
+                        .rbc-time-gutter { color: var(--text-muted); font-size: 0.75rem; font-weight: 500; }
+                        .rbc-timeslot-group { border-bottom: 1px solid var(--border-glass) !important; min-height: 50px !important; }
+                        .rbc-day-slot .rbc-time-slot { border-top: 1px solid rgba(255,255,255,0.03) !important; }
+                        .rbc-month-view, .rbc-time-view, .rbc-agenda-view { 
+                            border: 1px solid var(--border-glass) !important; 
+                            border-radius: 12px;
+                            overflow: hidden;
+                            background: rgba(0,0,0,0.2);
+                        }
+                        .rbc-day-bg + .rbc-day-bg { border-left: 1px solid var(--border-glass) !important; }
+                        .rbc-time-header-content { border-left: 1px solid var(--border-glass) !important; }
+                        .rbc-time-content > * + * > * { border-left: 1px solid var(--border-glass) !important; }
+                        .rbc-agenda-view table.rbc-agenda-table { border: none !important; color: white; }
+                        .rbc-agenda-view table.rbc-agenda-table thead > tr > th { border-bottom: 2px solid var(--border-glass) !important; color: var(--text-secondary); }
+                        .rbc-agenda-event-cell { color: white !important; }
                     `}</style>
                     <Calendar
                         localizer={localizer}
                         events={events}
                         startAccessor="start"
                         endAccessor="end"
-                        style={{ height: '100%' }}
-                        messages={{
-                            next: "Seguinte",
-                            previous: "Anterior",
-                            today: "Hoje",
-                            month: "Mês",
-                            week: "Semana",
-                            day: "Dia"
-                        }}
+                        style={{ height: '700px' }}
+                        eventPropGetter={eventStyleGetter}
+                        date={currentDate}
+                        view={currentView}
+                        onNavigate={date => setCurrentDate(date)}
+                        onView={view => setCurrentView(view)}
                         culture='pt'
                         selectable
                         onSelectSlot={handleSelectSlot}
                         onSelectEvent={handleSelectEvent}
-                        defaultView='week'
+                        components={{
+                            toolbar: CalendarToolbar
+                        }}
                     />
                 </div>
             </div>

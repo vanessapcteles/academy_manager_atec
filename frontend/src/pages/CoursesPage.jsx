@@ -34,6 +34,10 @@ function CoursesPage() {
         estado: 'planeado'
     });
 
+    const user = authService.getCurrentUser();
+    const role = user?.tipo_utilizador?.toUpperCase();
+    const isAdmin = role === 'ADMIN' || role === 'SECRETARIA';
+
     useEffect(() => {
         loadCourses();
     }, []);
@@ -174,9 +178,11 @@ function CoursesPage() {
                         />
                     </div>
                 </div>
-                <button className="btn-primary" onClick={() => { setEditingCourse(null); setFormData({ nome_curso: '', area: 'Informática', estado: 'planeado' }); setShowModal(true); }}>
-                    <Plus size={20} /> Novo Curso
-                </button>
+                {isAdmin && (
+                    <button className="btn-primary" onClick={() => { setEditingCourse(null); setFormData({ nome_curso: '', area: 'Informática', estado: 'planeado' }); setShowModal(true); }}>
+                        <Plus size={20} /> Novo Curso
+                    </button>
+                )}
             </div>
 
             {loading ? (
@@ -196,7 +202,7 @@ function CoursesPage() {
                         >
                             <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' }}>
                                 {/* Admin Actions */}
-                                {['ADMIN', 'SECRETARIA', 'FORMADOR'].includes(authService.getCurrentUser()?.tipo_utilizador?.toUpperCase()) && (
+                                {isAdmin && (
                                     <>
                                         <button onClick={() => openEdit(course)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
                                             <Edit2 size={16} />

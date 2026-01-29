@@ -19,6 +19,10 @@ import TurmaSchedulePage from './pages/TurmaSchedulePage';
 import SchedulesPage from './pages/SchedulesPage';
 import CandidatoPage from './pages/CandidatoPage';
 import CandidaturasPage from './pages/CandidaturasPage';
+import MyCoursePage from './pages/MyCoursePage';
+import GradesPage from './pages/GradesPage';
+import FormandoFichaPage from './pages/FormandoFichaPage';
+import FormadorFichaPage from './pages/FormadorFichaPage';
 import ChatWidget from './components/ChatWidget';
 import { authService } from './services/authService';
 import './App.css';
@@ -92,18 +96,26 @@ function App() {
             {/* Rota para Candidatos */}
 
 
-            <Route path="/courses" element={<RoleBasedRoute allowedRoles={internalRoles}><CoursesPage /></RoleBasedRoute>} />
+            <Route path="/courses" element={<RoleBasedRoute allowedRoles={['ADMIN', 'SECRETARIA', 'CANDIDATO', 'FORMADOR']}><CoursesPage /></RoleBasedRoute>} />
+
+            {/* Rotas de Formando */}
+            <Route path="/my-course" element={<RoleBasedRoute allowedRoles={['FORMANDO']}><MyCoursePage /></RoleBasedRoute>} />
+            <Route path="/grades" element={<RoleBasedRoute allowedRoles={['FORMANDO']}><GradesPage /></RoleBasedRoute>} />
+            <Route path="/formando-ficha" element={<RoleBasedRoute allowedRoles={['FORMANDO']}><FormandoFichaPage /></RoleBasedRoute>} />
+
+            {/* Rotas de Formador */}
+            <Route path="/formador-ficha" element={<RoleBasedRoute allowedRoles={['FORMADOR']}><FormadorFichaPage /></RoleBasedRoute>} />
 
             {/* Rotas mais específicas (Admin/Secretaria) */}
             <Route path="/users" element={<RoleBasedRoute allowedRoles={['ADMIN', 'SECRETARIA']}><UsersPage /></RoleBasedRoute>} />
-            <Route path="/rooms" element={<RoleBasedRoute allowedRoles={internalRoles}><RoomsPage /></RoleBasedRoute>} />
-            <Route path="/turmas" element={<RoleBasedRoute allowedRoles={internalRoles}><TurmasPage /></RoleBasedRoute>} />
-            <Route path="/turmas/:id" element={<RoleBasedRoute allowedRoles={internalRoles}><TurmaDetailsPage /></RoleBasedRoute>} />
-            <Route path="/turmas/:id/schedule" element={<RoleBasedRoute allowedRoles={internalRoles}><TurmaSchedulePage /></RoleBasedRoute>} />
-            <Route path="/modules" element={<RoleBasedRoute allowedRoles={internalRoles}><ModulesPage /></RoleBasedRoute>} />
-            <Route path="/formandos" element={<RoleBasedRoute allowedRoles={internalRoles}><FormandosPage /></RoleBasedRoute>} />
-            <Route path="/formadores" element={<RoleBasedRoute allowedRoles={internalRoles}><FormadoresPage /></RoleBasedRoute>} />
-            <Route path="/schedules" element={<RoleBasedRoute allowedRoles={internalRoles}><SchedulesPage /></RoleBasedRoute>} />
+            <Route path="/rooms" element={<RoleBasedRoute allowedRoles={['ADMIN', 'SECRETARIA', 'FORMADOR']}><RoomsPage /></RoleBasedRoute>} />
+            <Route path="/turmas" element={<RoleBasedRoute allowedRoles={['ADMIN', 'SECRETARIA', 'FORMADOR']}><TurmasPage /></RoleBasedRoute>} />
+            <Route path="/turmas/:id" element={<RoleBasedRoute allowedRoles={['ADMIN', 'SECRETARIA', 'FORMADOR']}><TurmaDetailsPage /></RoleBasedRoute>} />
+            <Route path="/turmas/:id/schedule" element={<RoleBasedRoute allowedRoles={['ADMIN', 'SECRETARIA', 'FORMADOR']}><TurmaSchedulePage /></RoleBasedRoute>} />
+            <Route path="/modules" element={<RoleBasedRoute allowedRoles={['ADMIN', 'SECRETARIA', 'FORMADOR']}><ModulesPage /></RoleBasedRoute>} />
+            <Route path="/formandos" element={<RoleBasedRoute allowedRoles={['ADMIN', 'SECRETARIA']}><FormandosPage /></RoleBasedRoute>} />
+            <Route path="/formadores" element={<RoleBasedRoute allowedRoles={['ADMIN', 'SECRETARIA']}><FormadoresPage /></RoleBasedRoute>} />
+            <Route path="/schedules" element={<RoleBasedRoute allowedRoles={['ADMIN', 'SECRETARIA', 'FORMADOR', 'FORMANDO']}><SchedulesPage /></RoleBasedRoute>} />
           </Route>
         </Routes>
       </Router>

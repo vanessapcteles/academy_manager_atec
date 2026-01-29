@@ -8,12 +8,12 @@ export const getDashboardStats = async (req, res) => {
         // ii. Total de cursos a decorrer
         const [cursosADecorrer] = await db.query("SELECT COUNT(*) as count FROM cursos WHERE estado = 'a decorrer'");
 
-        // iii. Total de formandos a frequentar cursos no atual momento
+        // iii. Total de formandos registados no sistema
         const [formandosAtivos] = await db.query(`
-            SELECT COUNT(DISTINCT i.id_formando) as count 
-            FROM inscricoes i
-            JOIN turmas t ON i.id_turma = t.id
-            WHERE t.estado = 'a decorrer'
+            SELECT COUNT(*) as count 
+            FROM utilizadores u
+            JOIN roles r ON u.role_id = r.id
+            WHERE r.nome = 'FORMANDO'
         `);
 
         // iv. Nº de cursos por área

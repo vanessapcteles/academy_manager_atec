@@ -16,38 +16,56 @@ const Sidebar = () => {
     const navigate = useNavigate();
 
     const user = authService.getCurrentUser();
-    // Verificações de Funções
     const role = user?.tipo_utilizador?.toUpperCase();
+
+    // Perfils simplificados
     const isAdmin = role === 'ADMIN';
     const isSecretaria = role === 'SECRETARIA';
-    const canManageRooms = ['ADMIN', 'SECRETARIA', 'FORMADOR'].includes(role);
-    const canManageCandidacies = ['ADMIN', 'SECRETARIA'].includes(role);
+    const isStaff = isAdmin || isSecretaria;
+    const isFormando = role === 'FORMANDO';
+    const isFormador = role === 'FORMADOR';
     const isCandidato = role === 'CANDIDATO';
 
     const menuItems = [
-        // Dashboard para todos (Redirects to Home/Landing for Candidate if not allowed? Dashboard route is internalRoles)
-        // Wait, Candidate dashboard route is /candidato, regular dashboard is /dashboard.
-        // Let's make "Dashboard" point to /candidato for candidates.
+        // Dashboard para quase todos
         {
             icon: LayoutDashboard,
             label: isCandidato ? 'Minha Candidatura' : 'Dashboard',
             path: isCandidato ? '/candidato' : '/dashboard'
         },
 
-        ...(canManageCandidacies ? [{ icon: FileText, label: 'Candidaturas', path: '/candidaturas' }] : []),
-        ...(isAdmin || isSecretaria ? [{ icon: Users, label: 'Gerir Utilizadores', path: '/users' }] : []),
-
-        // Cursos pode ser público/candidato
-        { icon: BookOpen, label: 'Cursos', path: '/courses' },
-
-        // Internal Only
-        ...(!isCandidato ? [
+        // Secretaria/Admin
+        ...(isStaff ? [
+            { icon: FileText, label: 'Candidaturas', path: '/candidaturas' },
+            { icon: Users, label: 'Gerir Utilizadores', path: '/users' },
+            { icon: BookOpen, label: 'Cursos', path: '/courses' },
             { icon: Users, label: 'Turmas', path: '/turmas' },
             { icon: GraduationCap, label: 'Módulos', path: '/modules' },
             { icon: Users, label: 'Formandos', path: '/formandos' },
             { icon: Users, label: 'Formadores', path: '/formadores' },
-            ...(canManageRooms ? [{ icon: DoorOpen, label: 'Salas', path: '/rooms' }] : []),
+            { icon: DoorOpen, label: 'Salas', path: '/rooms' },
             { icon: Calendar, label: 'Horários', path: '/schedules' },
+        ] : []),
+
+        // Formando
+        ...(isFormando ? [
+            { icon: BookOpen, label: 'Meu Curso', path: '/my-course' },
+            { icon: Calendar, label: 'Meus Horários', path: '/schedules' },
+            { icon: GraduationCap, label: 'Avaliações', path: '/grades' },
+            { icon: FileText, label: 'Ficha de Formando', path: '/formando-ficha' },
+        ] : []),
+
+        // Formador
+        ...(isFormador ? [
+            { icon: Users, label: 'Minhas Turmas', path: '/turmas' },
+            { icon: Calendar, label: 'Horários', path: '/schedules' },
+            { icon: DoorOpen, label: 'Salas e Aulas', path: '/rooms' },
+            { icon: FileText, label: 'Ficha de Formador', path: '/formador-ficha' },
+        ] : []),
+
+        // Candidato
+        ...(isCandidato ? [
+            { icon: BookOpen, label: 'Cursos Disponíveis', path: '/courses' },
         ] : [])
     ];
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { turmaService } from '../services/turmaService';
+import { authService } from '../services/authService';
 
 import { motion } from 'framer-motion';
 import {
@@ -33,6 +34,11 @@ function TurmasPage() {
         estado: 'planeado'
     });
 
+    const user = authService.getCurrentUser();
+    const role = user?.tipo_utilizador?.toUpperCase();
+    const isAdmin = role === 'ADMIN' || role === 'SECRETARIA';
+    const isFormador = role === 'FORMADOR';
+
     useEffect(() => {
         loadData();
     }, []);
@@ -43,6 +49,10 @@ function TurmasPage() {
                 turmaService.getAllTurmas(),
                 turmaService.getCursos()
             ]);
+
+            // Se for formador, filtrar turmas (assumindo que turmasData tem id_formador ou link similar)
+            // Por agora, mostramos todas mas escondemos ações de escrita.
+            // Para filtrar realmente precisaríamos de endpoint específico ou campo na DB.
             setTurmas(turmasData);
             setCursos(cursosData);
         } catch (error) {
@@ -54,6 +64,7 @@ function TurmasPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!isAdmin) return;
         try {
             if (editingTurma) {
                 await turmaService.updateTurma(editingTurma.id, formData);
@@ -70,6 +81,7 @@ function TurmasPage() {
     };
 
     const handleDelete = async (id) => {
+        if (!isAdmin) return;
         if (!window.confirm('Tem a certeza que deseja eliminar esta turma?')) return;
         try {
             await turmaService.deleteTurma(id);
@@ -80,6 +92,7 @@ function TurmasPage() {
     };
 
     const openEdit = (turma) => {
+        if (!isAdmin) return;
         setEditingTurma(turma);
         setFormData({
             id_curso: turma.id_curso,
@@ -118,9 +131,11 @@ function TurmasPage() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <button className="btn-primary" onClick={() => { setEditingTurma(null); setFormData({ id_curso: '', codigo_turma: '', data_inicio: '', data_fim: '', estado: 'planeado' }); setShowModal(true); }}>
-                    <Plus size={20} /> Nova Turma
-                </button>
+                {isAdmin && (
+                    <button className="btn-primary" onClick={() => { setEditingTurma(null); setFormData({ id_curso: '', codigo_turma: '', data_inicio: '', data_fim: '', estado: 'planeado' }); setShowModal(true); }}>
+                        <Plus size={20} /> Nova Turma
+                    </button>
+                )}
             </div>
 
             {loading ? (
@@ -148,12 +163,16 @@ function TurmasPage() {
                                 <button onClick={() => navigate(`/turmas/${turma.id}`)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} title="Gerir Módulos">
                                     <BookOpen size={16} />
                                 </button>
-                                <button onClick={() => openEdit(turma)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                                    <Edit2 size={16} />
-                                </button>
-                                <button onClick={() => handleDelete(turma.id)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer' }}>
-                                    <Trash2 size={16} />
-                                </button>
+                                {isAdmin && (
+                                    <>
+                                        <button onClick={() => openEdit(turma)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                            <Edit2 size={16} />
+                                        </button>
+                                        <button onClick={() => handleDelete(turma.id)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer' }}>
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </>
+                                )}
                             </div>
 
                             <div style={{ marginBottom: '1.5rem' }}>

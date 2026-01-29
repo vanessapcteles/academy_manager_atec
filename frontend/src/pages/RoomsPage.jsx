@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { roomService } from '../services/roomService';
+import { authService } from '../services/authService';
+import CalendarToolbar from '../components/ui/CalendarToolbar';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
@@ -38,12 +40,18 @@ function RoomsPage() {
     const [viewingSchedule, setViewingSchedule] = useState(null);
     const [roomEvents, setRoomEvents] = useState([]);
     const [modalConfig, setModalConfig] = useState({ isOpen: false });
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [currentView, setCurrentView] = useState('week');
 
     const [formData, setFormData] = useState({
         nome: '',
         capacidade: '',
         localizacao: 'Edifício Principal'
     });
+
+    const user = authService.getCurrentUser();
+    const role = user?.tipo_utilizador?.toUpperCase();
+    const isAdmin = role === 'ADMIN' || role === 'SECRETARIA';
 
     useEffect(() => {
         loadRooms();
@@ -144,9 +152,11 @@ function RoomsPage() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <button className="btn-primary" onClick={() => { setEditingRoom(null); setFormData({ nome: '', capacidade: '', localizacao: 'Edifício Principal' }); setShowModal(true); }}>
-                    <Plus size={20} /> Adicionar Sala
-                </button>
+                {isAdmin && (
+                    <button className="btn-primary" onClick={() => { setEditingRoom(null); setFormData({ nome: '', capacidade: '', localizacao: 'Edifício Principal' }); setShowModal(true); }}>
+                        <Plus size={20} /> Adicionar Sala
+                    </button>
+                )}
             </div>
 
             {loading ? (
@@ -168,12 +178,16 @@ function RoomsPage() {
                                 display: 'flex',
                                 gap: '0.5rem'
                             }}>
-                                <button onClick={() => openEdit(room)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                                    <Edit2 size={16} />
-                                </button>
-                                <button onClick={() => handleDelete(room.id)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer' }}>
-                                    <Trash2 size={16} />
-                                </button>
+                                {isAdmin && (
+                                    <>
+                                        <button onClick={() => openEdit(room)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                            <Edit2 size={16} />
+                                        </button>
+                                        <button onClick={() => handleDelete(room.id)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer' }}>
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </>
+                                )}
                             </div>
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -236,23 +250,20 @@ function RoomsPage() {
                                 </button>
                             </div>
 
-                            <div style={{ height: 'calc(100% - 100px)', color: 'black' }}>
-                                <style>{`
-                                    .rbc-calendar { color: white; }
-                                    .rbc-off-range-bg { background: rgba(255,255,255,0.05); }
-                                    .rbc-header { color: var(--text-secondary); border-bottom: 1px solid var(--border-glass); }
-                                    .rbc-today { background: rgba(59, 130, 246, 0.1); }
-                                    .rbc-event { background-color: var(--accent); border: none; }
-                                    .rbc-time-view, .rbc-month-view { border: 1px solid var(--border-glass); }
-                                    .rbc-timeslot-group, .rbc-day-bg { border-bottom: 1px solid rgba(255,255,255,0.05); }
-                                    .rbc-time-content { border-top: 2px solid var(--border-glass); }
-                                `}</style>
+                            <div style={{ height: 'calc(100% - 100px)' }}>
                                 <Calendar
                                     localizer={localizer}
                                     events={roomEvents}
                                     startAccessor="start"
                                     endAccessor="end"
                                     culture='pt'
+                                    components={{
+                                        toolbar: CalendarToolbar
+                                    }}
+                                    date={currentDate}
+                                    view={currentView}
+                                    onNavigate={date => setCurrentDate(date)}
+                                    onView={view => setCurrentView(view)}
                                     messages={{
                                         next: "Seguinte", previous: "Anterior", today: "Hoje",
                                         month: "Mês", week: "Semana", day: "Dia"
@@ -266,64 +277,66 @@ function RoomsPage() {
             </AnimatePresence>
 
             {/* Modal de Criação/Edição */}
-            {showModal && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', zIndex: 1000
-                }}>
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="glass-card"
-                        style={{ maxWidth: '400px', width: '100%', padding: '2rem' }}
-                    >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
-                            <h2>{editingRoom ? 'Editar Sala' : 'Nova Sala'}</h2>
-                            <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
-                                <X size={24} />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Nome da Sala</label>
-                                <input
-                                    type="text"
-                                    className="input-field"
-                                    required
-                                    value={formData.nome}
-                                    onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                                    placeholder="Ex: Sala 101"
-                                />
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Capacidade</label>
-                                <input
-                                    type="number"
-                                    className="input-field"
-                                    required
-                                    value={formData.capacidade}
-                                    onChange={(e) => setFormData({ ...formData, capacidade: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Localização</label>
-                                <input
-                                    type="text"
-                                    className="input-field"
-                                    value={formData.localizacao}
-                                    onChange={(e) => setFormData({ ...formData, localizacao: e.target.value })}
-                                />
+            {
+                showModal && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', zIndex: 1000
+                    }}>
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="glass-card"
+                            style={{ maxWidth: '400px', width: '100%', padding: '2rem' }}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
+                                <h2>{editingRoom ? 'Editar Sala' : 'Nova Sala'}</h2>
+                                <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+                                    <X size={24} />
+                                </button>
                             </div>
 
-                            <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
-                                <Save size={20} /> {editingRoom ? 'Guardar Alterações' : 'Criar Sala'}
-                            </button>
-                        </form>
-                    </motion.div>
-                </div>
-            )}
+                            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Nome da Sala</label>
+                                    <input
+                                        type="text"
+                                        className="input-field"
+                                        required
+                                        value={formData.nome}
+                                        onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                                        placeholder="Ex: Sala 101"
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Capacidade</label>
+                                    <input
+                                        type="number"
+                                        className="input-field"
+                                        required
+                                        value={formData.capacidade}
+                                        onChange={(e) => setFormData({ ...formData, capacidade: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Localização</label>
+                                    <input
+                                        type="text"
+                                        className="input-field"
+                                        value={formData.localizacao}
+                                        onChange={(e) => setFormData({ ...formData, localizacao: e.target.value })}
+                                    />
+                                </div>
+
+                                <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
+                                    <Save size={20} /> {editingRoom ? 'Guardar Alterações' : 'Criar Sala'}
+                                </button>
+                            </form>
+                        </motion.div>
+                    </div>
+                )
+            }
 
             <Modal
                 {...modalConfig}

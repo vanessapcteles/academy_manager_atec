@@ -9,6 +9,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 import { horarioService } from '../services/horarioService';
 import { Calendar as CalendarIcon, Info } from 'lucide-react';
+import CalendarToolbar from '../components/ui/CalendarToolbar';
 
 const locales = {
     'pt': pt,
@@ -27,6 +28,8 @@ function SchedulesPage() {
     const [loading, setLoading] = useState(true);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [currentView, setCurrentView] = useState('week');
 
     useEffect(() => {
         loadAllSchedules();
@@ -35,11 +38,8 @@ function SchedulesPage() {
     const loadAllSchedules = async () => {
         setLoading(true);
         try {
-            // Se as datas estiverem preenchidas, enviamos no request
             let data;
             if (startDate && endDate) {
-                // Aqui podemos usar getAllSchedules com parâmetros se o service suportar, 
-                // ou apenas filtrar no frontend se preferir, mas o requisito pede consulta rápida (backend)
                 data = await horarioService.getAllSchedules(startDate, endDate);
             } else {
                 data = await horarioService.getAllSchedules();
@@ -61,18 +61,20 @@ function SchedulesPage() {
         }
     };
 
-    const eventStyleGetter = (event) => {
-        return {
-            style: {
-                backgroundColor: 'var(--primary)',
-                borderRadius: '8px',
-                opacity: 0.8,
-                color: 'white',
-                border: 'none',
-                display: 'block'
-            }
-        };
-    };
+    const eventStyleGetter = (event) => ({
+        style: {
+            backgroundColor: 'var(--primary)',
+            borderRadius: '10px',
+            opacity: 0.9,
+            color: 'white',
+            border: 'none',
+            display: 'block',
+            padding: '5px 10px',
+            fontSize: '0.8rem',
+            fontWeight: '500',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+        }
+    });
 
     return (
         <>
@@ -106,34 +108,43 @@ function SchedulesPage() {
                             onChange={(e) => setEndDate(e.target.value)}
                         />
                     </div>
-                    {(startDate || endDate) && (
-                        <button
-                            onClick={() => { setStartDate(''); setEndDate(''); }}
-                            className="btn-glass"
-                            style={{ marginTop: '1.2rem', padding: '0.4rem' }}
-                        >
-                            Limpar
-                        </button>
-                    )}
                 </div>
             </div>
 
-            <div className="glass-card" style={{ height: '700px', padding: '1.5rem' }}>
+            <div className="glass-card" style={{ padding: '1.5rem', minHeight: '750px' }}>
                 <style>{`
-                    .rbc-calendar { color: var(--text-primary); }
-                    .rbc-off-range-bg { background: rgba(255,255,255,0.02); }
-                    .rbc-header { color: var(--text-secondary); border-bottom: 1px solid var(--border-glass); padding: 10px 0; }
-                    .rbc-today { background: rgba(56, 189, 248, 0.05); }
-                    .rbc-time-content { border-top: 1px solid var(--border-glass); }
-                    .rbc-time-gutter { color: var(--text-secondary); }
-                    .rbc-timeslot-group { border-bottom: 1px solid var(--border-glass); }
-                    .rbc-toolbar button { color: white; border: 1px solid var(--border-glass); background: rgba(255,255,255,0.05); }
-                    .rbc-toolbar button:active, .rbc-toolbar button.rbc-active { background: var(--primary); box-shadow: none; }
-                    .rbc-event { padding: 4px 8px; font-size: 0.85rem; }
+                    .rbc-calendar { font-family: inherit; }
+                    .rbc-off-range-bg { background: rgba(0,0,0,0.1); }
+                    .rbc-header { 
+                        color: var(--text-secondary); 
+                        border-bottom: 1px solid var(--border-glass) !important; 
+                        padding: 15px 0 !important;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        font-size: 0.75rem;
+                        letter-spacing: 0.05em;
+                    }
+                    .rbc-today { background: rgba(56, 189, 248, 0.1) !important; }
+                    .rbc-time-content { border-top: 2px solid var(--border-glass) !important; }
+                    .rbc-time-gutter { color: var(--text-muted); font-size: 0.75rem; font-weight: 500; }
+                    .rbc-timeslot-group { border-bottom: 1px solid var(--border-glass) !important; min-height: 50px !important; }
+                    .rbc-day-slot .rbc-time-slot { border-top: 1px solid rgba(255,255,255,0.03) !important; }
+                    .rbc-month-view, .rbc-time-view, .rbc-agenda-view { 
+                        border: 1px solid var(--border-glass) !important; 
+                        border-radius: 12px;
+                        overflow: hidden;
+                        background: rgba(0,0,0,0.2);
+                    }
+                    .rbc-day-bg + .rbc-day-bg { border-left: 1px solid var(--border-glass) !important; }
+                    .rbc-time-header-content { border-left: 1px solid var(--border-glass) !important; }
+                    .rbc-time-content > * + * > * { border-left: 1px solid var(--border-glass) !important; }
+                    .rbc-agenda-view table.rbc-agenda-table { border: none !important; color: white; }
+                    .rbc-agenda-view table.rbc-agenda-table thead > tr > th { border-bottom: 2px solid var(--border-glass) !important; color: var(--text-secondary); }
+                    .rbc-agenda-event-cell { color: white !important; }
                 `}</style>
 
                 {loading ? (
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '600px' }}>
                         <p>A carregar horários...</p>
                     </div>
                 ) : (
@@ -142,24 +153,22 @@ function SchedulesPage() {
                         events={events}
                         startAccessor="start"
                         endAccessor="end"
-                        style={{ height: '100%' }}
+                        style={{ height: '700px' }}
                         eventPropGetter={eventStyleGetter}
-                        messages={{
-                            next: "Próximo",
-                            previous: "Anterior",
-                            today: "Hoje",
-                            month: "Mês",
-                            week: "Semana",
-                            day: "Dia"
-                        }}
+                        date={currentDate}
+                        view={currentView}
+                        onNavigate={date => setCurrentDate(date)}
+                        onView={view => setCurrentView(view)}
                         culture='pt'
-                        defaultView='week'
+                        components={{
+                            toolbar: CalendarToolbar
+                        }}
                     />
                 )}
             </div>
 
-            <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
-                <div className="glass-card" style={{ flex: 1, padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ marginTop: '1.5rem' }}>
+                <div className="glass-card" style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <Info size={20} style={{ color: 'var(--primary)' }} />
                     <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                         Para agendar ou editar aulas, aceda à página específica da <strong>Turma</strong> desejada.
